@@ -51,25 +51,24 @@ class PurchaseNotifier extends StateNotifier<PurchaseState> {
         state = state.copyWith(isAvailable: false);
         return;
       }
+
+      state = state.copyWith(isAvailable: true);
+
+      // Listen for purchase updates
+      _subscription = iap.purchaseStream.listen(
+        _onPurchaseUpdate,
+        onError: (error) {
+          state = state.copyWith(error: 'Purchase error occurred');
+        },
+      );
+
+      // Load product details
+      final response = await iap.queryProductDetails({AppConstants.proProductId});
+      if (response.productDetails.isNotEmpty) {
+        state = state.copyWith(proProduct: response.productDetails.first);
+      }
     } catch (_) {
       state = state.copyWith(isAvailable: false);
-      return;
-    }
-
-    state = state.copyWith(isAvailable: true);
-
-    // Listen for purchase updates
-    _subscription = iap.purchaseStream.listen(
-      _onPurchaseUpdate,
-      onError: (error) {
-        state = state.copyWith(error: 'Purchase error occurred');
-      },
-    );
-
-    // Load product details
-    final response = await iap.queryProductDetails({AppConstants.proProductId});
-    if (response.productDetails.isNotEmpty) {
-      state = state.copyWith(proProduct: response.productDetails.first);
     }
   }
 

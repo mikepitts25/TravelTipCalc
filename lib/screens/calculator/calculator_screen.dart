@@ -22,10 +22,11 @@ class CalculatorScreen extends ConsumerStatefulWidget {
   const CalculatorScreen({super.key, required this.onCountryTap});
 
   @override
-  ConsumerState<CalculatorScreen> createState() => _CalculatorScreenState();
+  ConsumerState<CalculatorScreen> createState() => CalculatorScreenState();
 }
 
-class _CalculatorScreenState extends ConsumerState<CalculatorScreen> {
+// ignore: library_private_types_in_public_api
+class CalculatorScreenState extends ConsumerState<CalculatorScreen> {
   final _tippingRepo = TippingRepository();
   String _countryFlag = '🌍';
   String _countryName = 'Select Country';
@@ -296,7 +297,7 @@ class _RoundingToggle extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Icon(
-          Icons.round_outlined,
+          Icons.blur_circular_outlined,
           size: 16,
           color: theme.textTheme.bodyMedium?.color,
         ),

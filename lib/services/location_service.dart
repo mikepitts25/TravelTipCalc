@@ -29,10 +29,8 @@ class LocationService {
 
     // Get current position
     final position = await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.low, // Low accuracy is enough for country
-        timeLimit: Duration(seconds: 10),
-      ),
+      desiredAccuracy: LocationAccuracy.low,
+      timeLimit: const Duration(seconds: 10),
     );
 
     // Reverse geocode to get country

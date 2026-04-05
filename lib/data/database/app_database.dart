@@ -7,7 +7,7 @@ import 'package:sqflite/sqflite.dart';
 class AppDatabase {
   static Database? _database;
   static const _dbName = 'travel_tip_calc.db';
-  static const _dbVersion = 1;
+  static const _dbVersion = 2;
 
   AppDatabase._();
   static final AppDatabase instance = AppDatabase._();
@@ -25,6 +25,7 @@ class AppDatabase {
       path,
       version: _dbVersion,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
   }
 
@@ -79,6 +80,8 @@ class AppDatabase {
       )
     ''');
 
+    await _createExchangeRatesTable(db);
+
     // Create indexes for fast lookups
     await db.execute(
       'CREATE INDEX idx_tipping_rules_country ON tipping_rules (country_id)',
@@ -89,6 +92,24 @@ class AppDatabase {
 
     // Seed tipping data from bundled JSON
     await _seedData(db);
+  }
+
+  static Future<void> _createExchangeRatesTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS exchange_rates (
+        base_currency TEXT NOT NULL,
+        target_currency TEXT NOT NULL,
+        rate REAL NOT NULL,
+        fetched_at TEXT NOT NULL,
+        PRIMARY KEY (base_currency, target_currency)
+      )
+    ''');
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await _createExchangeRatesTable(db);
+    }
   }
 
   Future<void> _seedData(Database db) async {

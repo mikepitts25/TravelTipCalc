@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/constants.dart';
+import '../../config/currencies.dart';
 import '../../data/models/tipping_rule.dart';
 import '../../data/repositories/tipping_repository.dart';
+import '../../providers/exchange_rate_provider.dart';
 import '../../providers/location_provider.dart';
 import '../../providers/preferences_provider.dart';
 import '../../providers/tip_calculator_provider.dart';
@@ -28,6 +30,7 @@ class CalculatorScreenState extends ConsumerState<CalculatorScreen> {
   final _tippingRepo = TippingRepository();
   String _countryFlag = '\u{1F30D}';
   String _countryName = 'Select Country';
+  String _localCurrencyCode = 'USD';
   bool _serviceIncluded = false;
   TippingRule? _currentRule;
 
@@ -37,6 +40,14 @@ class CalculatorScreenState extends ConsumerState<CalculatorScreen> {
     // Try to detect location on first load
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _detectOrLoadCountry();
+      // Refetch exchange rate when home currency changes
+      ref.listenManual(homeCurrencyProvider, (previous, next) {
+        if (previous != next && _localCurrencyCode.isNotEmpty) {
+          ref
+              .read(exchangeRateProvider.notifier)
+              .fetchRate(_localCurrencyCode, next);
+        }
+      });
     });
   }
 
@@ -80,8 +91,15 @@ class CalculatorScreenState extends ConsumerState<CalculatorScreen> {
     setState(() {
       _countryFlag = country.flag;
       _countryName = country.name;
+      _localCurrencyCode = country.currencyCode;
       _serviceIncluded = country.serviceIncluded;
     });
+
+    // Fetch exchange rate from local currency to user's home currency
+    final homeCurrency = ref.read(homeCurrencyProvider);
+    ref
+        .read(exchangeRateProvider.notifier)
+        .fetchRate(country.currencyCode, homeCurrency);
 
     // Load tipping rule for current service type
     await _loadRule(country.id, calcState.serviceType);
@@ -120,6 +138,8 @@ class CalculatorScreenState extends ConsumerState<CalculatorScreen> {
   Widget build(BuildContext context) {
     final calcState = ref.watch(tipCalculatorProvider);
     final calcNotifier = ref.read(tipCalculatorProvider.notifier);
+    final exchangeRate = ref.watch(exchangeRateProvider);
+    final homeCurrency = ref.watch(homeCurrencyProvider);
     final theme = Theme.of(context);
 
     return SafeArea(
@@ -208,6 +228,14 @@ class CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                       tipPercent: calcState.result.tipPercent,
                       splitCount: calcState.splitCount,
                       currencySymbol: calcState.currencySymbol,
+                      exchangeRate: exchangeRate.hasRate &&
+                              !exchangeRate.isSameCurrency
+                          ? exchangeRate.rate
+                          : null,
+                      homeCurrencySymbol:
+                          getCurrencySymbol(homeCurrency),
+                      homeCurrencyCode: homeCurrency,
+                      localCurrencyCode: _localCurrencyCode,
                     ),
                   ),
                   const SizedBox(height: 8),

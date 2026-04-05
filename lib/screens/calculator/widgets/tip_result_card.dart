@@ -12,6 +12,12 @@ class TipResultCard extends StatelessWidget {
   final int splitCount;
   final String currencySymbol;
 
+  // Conversion fields (null = no conversion shown)
+  final double? exchangeRate;
+  final String? homeCurrencySymbol;
+  final String? homeCurrencyCode;
+  final String? localCurrencyCode;
+
   const TipResultCard({
     super.key,
     required this.tipAmount,
@@ -21,7 +27,21 @@ class TipResultCard extends StatelessWidget {
     required this.tipPercent,
     required this.splitCount,
     required this.currencySymbol,
+    this.exchangeRate,
+    this.homeCurrencySymbol,
+    this.homeCurrencyCode,
+    this.localCurrencyCode,
   });
+
+  bool get _showConversion =>
+      exchangeRate != null &&
+      homeCurrencySymbol != null &&
+      localCurrencyCode != homeCurrencyCode;
+
+  String _converted(double amount) {
+    final converted = amount * exchangeRate!;
+    return CurrencyFormatter.formatCompact(converted, homeCurrencySymbol!);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,11 +53,45 @@ class TipResultCard extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
+            // Exchange rate badge
+            if (_showConversion)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.currency_exchange,
+                        size: 14,
+                        color: theme.colorScheme.primary,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '1 $localCurrencyCode = ${exchangeRate!.toStringAsFixed(exchangeRate! < 1 ? 4 : 2)} $homeCurrencyCode',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
             // Tip amount
             _ResultRow(
               label: 'Tip',
-              value: CurrencyFormatter.formatCompact(tipAmount, currencySymbol),
+              value:
+                  CurrencyFormatter.formatCompact(tipAmount, currencySymbol),
               subtitle: CurrencyFormatter.formatPercent(tipPercent),
+              convertedValue: _showConversion ? _converted(tipAmount) : null,
               theme: theme,
               isHighlighted: true,
             ),
@@ -53,6 +107,8 @@ class TipResultCard extends StatelessWidget {
                 totalAmount,
                 currencySymbol,
               ),
+              convertedValue:
+                  _showConversion ? _converted(totalAmount) : null,
               theme: theme,
             ),
             // Per person (if splitting)
@@ -70,6 +126,8 @@ class TipResultCard extends StatelessWidget {
                 ),
                 subtitle:
                     '(${CurrencyFormatter.formatCompact(perPersonTip, currencySymbol)} tip)',
+                convertedValue:
+                    _showConversion ? _converted(perPersonTotal) : null,
                 theme: theme,
                 isHighlighted: true,
               ),
@@ -92,6 +150,7 @@ class _ResultRow extends StatelessWidget {
   final String label;
   final String value;
   final String? subtitle;
+  final String? convertedValue;
   final ThemeData theme;
   final bool isHighlighted;
 
@@ -99,6 +158,7 @@ class _ResultRow extends StatelessWidget {
     required this.label,
     required this.value,
     this.subtitle,
+    this.convertedValue,
     required this.theme,
     this.isHighlighted = false,
   });
@@ -125,14 +185,27 @@ class _ResultRow extends StatelessWidget {
               ),
           ],
         ),
-        Text(
-          value,
-          style: isHighlighted
-              ? theme.textTheme.headlineMedium?.copyWith(
-                  color: theme.colorScheme.primary,
-                  fontWeight: FontWeight.w700,
-                )
-              : theme.textTheme.titleLarge,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              value,
+              style: isHighlighted
+                  ? theme.textTheme.headlineMedium?.copyWith(
+                      color: theme.colorScheme.primary,
+                      fontWeight: FontWeight.w700,
+                    )
+                  : theme.textTheme.titleLarge,
+            ),
+            if (convertedValue != null)
+              Text(
+                '\u2248 $convertedValue',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+          ],
         ),
       ],
     );

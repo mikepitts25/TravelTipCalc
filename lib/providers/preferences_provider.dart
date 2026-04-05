@@ -67,3 +67,23 @@ final proStatusProvider = StateNotifierProvider<ProStatusNotifier, bool>(
     return ProStatusNotifier(prefs);
   },
 );
+
+/// Home currency provider (user's preferred display currency).
+class HomeCurrencyNotifier extends StateNotifier<String> {
+  final PreferencesRepository? _prefs;
+
+  HomeCurrencyNotifier(this._prefs) : super(_prefs?.homeCurrency ?? 'USD');
+
+  void setCurrency(String code) {
+    state = code;
+    _prefs?.setHomeCurrency(code);
+  }
+}
+
+final homeCurrencyProvider =
+    StateNotifierProvider<HomeCurrencyNotifier, String>(
+  (ref) {
+    final prefs = ref.watch(preferencesRepositoryProvider);
+    return HomeCurrencyNotifier(prefs);
+  },
+);

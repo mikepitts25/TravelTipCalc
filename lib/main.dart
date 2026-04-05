@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
-import 'services/ad_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,8 +13,9 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  // Initialize AdMob
-  await AdService.initialize();
+  // Note: AdMob initialization is deferred to when ads are first needed.
+  // You must add your AdMob App ID to ios/Runner/Info.plist and
+  // android/app/src/main/AndroidManifest.xml before enabling ads.
 
   runApp(
     const ProviderScope(

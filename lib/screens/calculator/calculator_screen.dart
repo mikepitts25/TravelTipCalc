@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import '../../config/constants.dart';
 import '../../data/models/tipping_rule.dart';
 import '../../data/repositories/tipping_repository.dart';
-import '../../providers/ad_provider.dart';
 import '../../providers/location_provider.dart';
 import '../../providers/preferences_provider.dart';
 import '../../providers/tip_calculator_provider.dart';
@@ -43,20 +41,29 @@ class CalculatorScreenState extends ConsumerState<CalculatorScreen> {
   }
 
   Future<void> _detectOrLoadCountry() async {
-    final prefs = ref.read(preferencesRepositoryProvider);
-    final lastCountry = prefs?.lastCountry;
+    try {
+      final prefs = ref.read(preferencesRepositoryProvider);
+      final lastCountry = prefs?.lastCountry;
 
-    if (lastCountry != null) {
-      await _loadCountry(lastCountry);
-    } else {
-      // Try GPS detection
-      await ref.read(locationProvider.notifier).detectLocation();
-      final locationState = ref.read(locationProvider);
-      if (locationState.countryCode != null) {
-        await _loadCountry(locationState.countryCode!);
+      if (lastCountry != null) {
+        await _loadCountry(lastCountry);
       } else {
+        // Try GPS detection (may fail on simulator)
+        try {
+          await ref.read(locationProvider.notifier).detectLocation();
+          final locationState = ref.read(locationProvider);
+          if (locationState.countryCode != null) {
+            await _loadCountry(locationState.countryCode!);
+            return;
+          }
+        } catch (_) {
+          // Location detection failed, fall through to default
+        }
         await _loadCountry(AppConstants.defaultCountry);
       }
+    } catch (_) {
+      // Database might not be ready yet, load default
+      await _loadCountry(AppConstants.defaultCountry);
     }
   }
 
@@ -69,6 +76,7 @@ class CalculatorScreenState extends ConsumerState<CalculatorScreen> {
 
     calcNotifier.setCountry(country.id, country.currencySymbol);
 
+    if (!mounted) return;
     setState(() {
       _countryFlag = country.flag;
       _countryName = country.name;
@@ -84,7 +92,7 @@ class CalculatorScreenState extends ConsumerState<CalculatorScreen> {
 
   Future<void> _loadRule(String countryId, ServiceType serviceType) async {
     final rule = await _tippingRepo.getRule(countryId, serviceType);
-    if (rule != null) {
+    if (rule != null && mounted) {
       setState(() => _currentRule = rule);
 
       // Check if user has a saved tip % for this combo
@@ -112,7 +120,6 @@ class CalculatorScreenState extends ConsumerState<CalculatorScreen> {
   Widget build(BuildContext context) {
     final calcState = ref.watch(tipCalculatorProvider);
     final calcNotifier = ref.read(tipCalculatorProvider.notifier);
-    final bannerAd = ref.watch(bannerAdProvider);
     final theme = Theme.of(context);
 
     return SafeArea(
@@ -217,13 +224,8 @@ class CalculatorScreenState extends ConsumerState<CalculatorScreen> {
               ),
             ),
           ),
-          // Banner ad at bottom
-          if (bannerAd != null)
-            SizedBox(
-              width: bannerAd.size.width.toDouble(),
-              height: bannerAd.size.height.toDouble(),
-              child: AdWidget(ad: bannerAd),
-            ),
+          // Banner ad placeholder - enable once AdMob is configured
+          // See lib/providers/ad_provider.dart for setup instructions
         ],
       ),
     );

@@ -43,10 +43,15 @@ class PurchaseNotifier extends StateNotifier<PurchaseState> {
   }
 
   Future<void> _init() async {
-    final iap = InAppPurchase.instance;
-    final available = await iap.isAvailable();
+    try {
+      final iap = InAppPurchase.instance;
+      final available = await iap.isAvailable();
 
-    if (!available) {
+      if (!available) {
+        state = state.copyWith(isAvailable: false);
+        return;
+      }
+    } catch (_) {
       state = state.copyWith(isAvailable: false);
       return;
     }

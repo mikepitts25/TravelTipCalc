@@ -18,7 +18,8 @@ class ExchangeRateResult {
 }
 
 class ExchangeRateService {
-  static const _baseUrl = 'https://api.frankfurter.app';
+  // open.er-api.com: free, no API key, 150+ currencies including COP
+  static const _baseUrl = 'https://open.er-api.com/v6/latest';
   static const _cacheMaxAge = Duration(hours: 6);
 
   /// Get exchange rate from [fromCurrency] to [toCurrency].
@@ -60,13 +61,8 @@ class ExchangeRateService {
   /// Fetch all rates for a base currency and cache them.
   Future<Map<String, double>?> getAllRates(String baseCurrency) async {
     try {
-      final uri = Uri.parse('$_baseUrl/latest?from=$baseCurrency');
-      final response = await http.get(uri).timeout(const Duration(seconds: 10));
-      if (response.statusCode != 200) return null;
-
-      final data = json.decode(response.body) as Map<String, dynamic>;
-      final rates = (data['rates'] as Map<String, dynamic>)
-          .map((key, value) => MapEntry(key, (value as num).toDouble()));
+      final rates = await _fetchAllRates(baseCurrency);
+      if (rates == null) return null;
 
       // Cache all rates
       final now = DateTime.now();
@@ -80,14 +76,29 @@ class ExchangeRateService {
     }
   }
 
-  Future<double?> _fetchRate(String from, String to) async {
-    final uri = Uri.parse('$_baseUrl/latest?from=$from&to=$to');
+  Future<Map<String, double>?> _fetchAllRates(String baseCurrency) async {
+    final uri = Uri.parse('$_baseUrl/$baseCurrency');
     final response = await http.get(uri).timeout(const Duration(seconds: 10));
     if (response.statusCode != 200) return null;
 
     final data = json.decode(response.body) as Map<String, dynamic>;
-    final rates = data['rates'] as Map<String, dynamic>;
-    return (rates[to] as num?)?.toDouble();
+    if (data['result'] != 'success') return null;
+
+    return (data['rates'] as Map<String, dynamic>)
+        .map((key, value) => MapEntry(key, (value as num).toDouble()));
+  }
+
+  Future<double?> _fetchRate(String from, String to) async {
+    final rates = await _fetchAllRates(from);
+    if (rates == null) return null;
+
+    // Cache all fetched rates since we got them anyway
+    final now = DateTime.now();
+    for (final entry in rates.entries) {
+      await _cacheRate(from, entry.key, entry.value, now);
+    }
+
+    return rates[to];
   }
 
   Future<ExchangeRateResult?> _getCachedRate(String from, String to) async {

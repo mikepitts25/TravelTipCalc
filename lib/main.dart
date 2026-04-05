@@ -13,9 +13,8 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  // Note: AdMob initialization is deferred to when ads are first needed.
-  // You must add your AdMob App ID to ios/Runner/Info.plist and
-  // android/app/src/main/AndroidManifest.xml before enabling ads.
+  // Note: AdMob initialization is deferred until google_mobile_ads is
+  // re-enabled in pubspec.yaml and App IDs are configured natively.
 
   runApp(
     const ProviderScope(

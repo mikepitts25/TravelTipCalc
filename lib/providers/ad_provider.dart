@@ -6,9 +6,9 @@ import 'preferences_provider.dart';
 /// Ads are disabled until AdMob App ID is configured in native projects.
 final showAdsProvider = Provider<bool>((ref) {
   final isPro = ref.watch(proStatusProvider);
-  // Disable ads until AdMob is properly configured.
-  // Set this to `!isPro` once you add your AdMob App ID to
-  // ios/Runner/Info.plist (GADApplicationIdentifier) and
-  // android/app/src/main/AndroidManifest.xml (com.google.android.gms.ads.APPLICATION_ID).
+  // Disable ads until google_mobile_ads is re-enabled in pubspec.yaml
+  // and AdMob App ID is configured in:
+  //   ios/Runner/Info.plist (GADApplicationIdentifier)
+  //   android/app/src/main/AndroidManifest.xml (com.google.android.gms.ads.APPLICATION_ID)
   return false && !isPro;
 });

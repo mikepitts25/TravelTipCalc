@@ -26,7 +26,7 @@ class CalculatorScreen extends ConsumerStatefulWidget {
 // ignore: library_private_types_in_public_api
 class CalculatorScreenState extends ConsumerState<CalculatorScreen> {
   final _tippingRepo = TippingRepository();
-  String _countryFlag = '🌍';
+  String _countryFlag = '\u{1F30D}';
   String _countryName = 'Select Country';
   bool _serviceIncluded = false;
   TippingRule? _currentRule;
@@ -308,9 +308,9 @@ class _RoundingToggle extends StatelessWidget {
         const SizedBox(width: 8),
         _roundChip('Off', RoundingMode.none),
         const SizedBox(width: 6),
-        _roundChip('Tip ↑', RoundingMode.roundTipUp),
+        _roundChip('Tip \u2191', RoundingMode.roundTipUp),
         const SizedBox(width: 6),
-        _roundChip('Total ↑', RoundingMode.roundTotalUp),
+        _roundChip('Total \u2191', RoundingMode.roundTotalUp),
       ],
     );
   }

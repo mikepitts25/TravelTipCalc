@@ -11,8 +11,6 @@ class TipResultCard extends StatelessWidget {
   final double tipPercent;
   final int splitCount;
   final String currencySymbol;
-
-  // Conversion fields (null = no conversion shown)
   final double? exchangeRate;
   final String? homeCurrencySymbol;
   final String? homeCurrencyCode;
@@ -53,7 +51,6 @@ class TipResultCard extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // Exchange rate badge
             if (_showConversion)
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
@@ -84,12 +81,9 @@ class TipResultCard extends StatelessWidget {
                   ),
                 ),
               ),
-
-            // Tip amount
             _ResultRow(
               label: 'Tip',
-              value:
-                  CurrencyFormatter.formatCompact(tipAmount, currencySymbol),
+              value: CurrencyFormatter.formatCompact(tipAmount, currencySymbol),
               subtitle: CurrencyFormatter.formatPercent(tipPercent),
               convertedValue: _showConversion ? _converted(tipAmount) : null,
               theme: theme,
@@ -100,18 +94,15 @@ class TipResultCard extends StatelessWidget {
               color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
             ),
             const SizedBox(height: 12),
-            // Total
             _ResultRow(
               label: 'Total',
               value: CurrencyFormatter.formatCompact(
                 totalAmount,
                 currencySymbol,
               ),
-              convertedValue:
-                  _showConversion ? _converted(totalAmount) : null,
+              convertedValue: _showConversion ? _converted(totalAmount) : null,
               theme: theme,
             ),
-            // Per person (if splitting)
             if (showSplit) ...[
               const SizedBox(height: 16),
               Divider(
@@ -199,7 +190,7 @@ class _ResultRow extends StatelessWidget {
             ),
             if (convertedValue != null)
               Text(
-                '\u2248 $convertedValue',
+                '≈ $convertedValue',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   fontWeight: FontWeight.w500,

@@ -2,16 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/constants.dart';
-import '../../config/currencies.dart';
 import '../../data/models/tipping_rule.dart';
+import '../../data/models/transaction.dart';
 import '../../data/repositories/tipping_repository.dart';
-import '../../providers/exchange_rate_provider.dart';
+import '../../providers/group_calculator_provider.dart';
+import '../../providers/history_provider.dart';
 import '../../providers/location_provider.dart';
 import '../../providers/preferences_provider.dart';
 import '../../providers/tip_calculator_provider.dart';
 import '../../utils/rounding.dart';
 import 'widgets/bill_input.dart';
 import 'widgets/country_badge.dart';
+import 'widgets/group_mode_panel.dart';
 import 'widgets/service_selector.dart';
 import 'widgets/split_control.dart';
 import 'widgets/tip_result_card.dart';
@@ -30,24 +32,16 @@ class CalculatorScreenState extends ConsumerState<CalculatorScreen> {
   final _tippingRepo = TippingRepository();
   String _countryFlag = '\u{1F30D}';
   String _countryName = 'Select Country';
-  String _localCurrencyCode = 'USD';
+  String _currencyCode = 'USD';
   bool _serviceIncluded = false;
   TippingRule? _currentRule;
+  bool _isGroupMode = false;
 
   @override
   void initState() {
     super.initState();
-    // Try to detect location on first load
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _detectOrLoadCountry();
-      // Refetch exchange rate when home currency changes
-      ref.listenManual(homeCurrencyProvider, (previous, next) {
-        if (previous != next && _localCurrencyCode.isNotEmpty) {
-          ref
-              .read(exchangeRateProvider.notifier)
-              .fetchRate(_localCurrencyCode, next);
-        }
-      });
     });
   }
 
@@ -59,7 +53,6 @@ class CalculatorScreenState extends ConsumerState<CalculatorScreen> {
       if (lastCountry != null) {
         await _loadCountry(lastCountry);
       } else {
-        // Try GPS detection (may fail on simulator)
         try {
           await ref.read(locationProvider.notifier).detectLocation();
           final locationState = ref.read(locationProvider);
@@ -67,13 +60,10 @@ class CalculatorScreenState extends ConsumerState<CalculatorScreen> {
             await _loadCountry(locationState.countryCode!);
             return;
           }
-        } catch (_) {
-          // Location detection failed, fall through to default
-        }
+        } catch (_) {}
         await _loadCountry(AppConstants.defaultCountry);
       }
     } catch (_) {
-      // Database might not be ready yet, load default
       await _loadCountry(AppConstants.defaultCountry);
     }
   }
@@ -86,25 +76,20 @@ class CalculatorScreenState extends ConsumerState<CalculatorScreen> {
     final calcState = ref.read(tipCalculatorProvider);
 
     calcNotifier.setCountry(country.id, country.currencySymbol);
+    ref.read(groupCalculatorProvider.notifier).setCountryAndCurrency(
+          country.id,
+          country.currencySymbol,
+        );
 
     if (!mounted) return;
     setState(() {
       _countryFlag = country.flag;
       _countryName = country.name;
-      _localCurrencyCode = country.currencyCode;
+      _currencyCode = country.currencyCode;
       _serviceIncluded = country.serviceIncluded;
     });
 
-    // Fetch exchange rate from local currency to user's home currency
-    final homeCurrency = ref.read(homeCurrencyProvider);
-    ref
-        .read(exchangeRateProvider.notifier)
-        .fetchRate(country.currencyCode, homeCurrency);
-
-    // Load tipping rule for current service type
     await _loadRule(country.id, calcState.serviceType);
-
-    // Save as last country
     ref.read(preferencesRepositoryProvider)?.setLastCountry(country.id);
   }
 
@@ -113,12 +98,12 @@ class CalculatorScreenState extends ConsumerState<CalculatorScreen> {
     if (rule != null && mounted) {
       setState(() => _currentRule = rule);
 
-      // Check if user has a saved tip % for this combo
       final prefs = ref.read(preferencesRepositoryProvider);
       final savedTip = prefs?.getLastTip(countryId, serviceType.dbValue);
+      final tipPct = savedTip ?? rule.suggestedPercent;
 
-      final calcNotifier = ref.read(tipCalculatorProvider.notifier);
-      calcNotifier.setTipPercent(savedTip ?? rule.suggestedPercent);
+      ref.read(tipCalculatorProvider.notifier).setTipPercent(tipPct);
+      ref.read(groupCalculatorProvider.notifier).setTipPercent(tipPct);
     }
   }
 
@@ -129,133 +114,262 @@ class CalculatorScreenState extends ConsumerState<CalculatorScreen> {
     _loadRule(calcState.countryId, type);
   }
 
-  /// Called externally when a country is selected from the picker.
   void loadCountry(String countryId) {
     _loadCountry(countryId);
+  }
+
+  void _saveToHistory(BuildContext context) {
+    final isPro = ref.read(proStatusProvider);
+    if (!isPro) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Trip history is a Pro feature — upgrade in Settings'),
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    final calcState = ref.read(tipCalculatorProvider);
+    if (calcState.billAmount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a bill amount first')),
+      );
+      return;
+    }
+
+    final tx = TripTransaction(
+      date: DateTime.now(),
+      countryId: calcState.countryId,
+      countryName: _countryName,
+      countryFlag: _countryFlag,
+      serviceType: calcState.serviceType,
+      billAmount: calcState.billAmount,
+      tipPercent: calcState.result.tipPercent,
+      tipAmount: calcState.result.tipAmount,
+      totalAmount: calcState.result.totalAmount,
+      splitCount: calcState.splitCount,
+      currencyCode: _currencyCode,
+      currencySymbol: calcState.currencySymbol,
+    );
+
+    ref.read(historyProvider.notifier).save(tx);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Saved to trip history'),
+        action: SnackBarAction(label: 'OK', onPressed: () {}),
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final calcState = ref.watch(tipCalculatorProvider);
     final calcNotifier = ref.read(tipCalculatorProvider.notifier);
-    final exchangeRate = ref.watch(exchangeRateProvider);
-    final homeCurrency = ref.watch(homeCurrencyProvider);
     final theme = Theme.of(context);
+    final isPro = ref.watch(proStatusProvider);
 
     return SafeArea(
       child: Column(
         children: [
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  const SizedBox(height: 12),
-                  // Country badge
-                  CountryBadge(
+          // Header: country badge + mode toggle + save button
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: CountryBadge(
                     flag: _countryFlag,
                     countryName: _countryName,
                     serviceIncluded: _serviceIncluded,
                     onTap: widget.onCountryTap,
                   ),
-                  const SizedBox(height: 8),
-                  // Service type selector
-                  ServiceSelector(
-                    selected: calcState.serviceType,
-                    onSelected: _onServiceChanged,
+                ),
+                const SizedBox(width: 8),
+                _ModeToggle(
+                  isGroupMode: _isGroupMode,
+                  onToggle: (v) => setState(() => _isGroupMode = v),
+                ),
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: Icon(
+                    Icons.bookmark_add_outlined,
+                    color: isPro
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurface.withValues(alpha: 0.4),
                   ),
-                  const SizedBox(height: 4),
-                  // Tipping note for current rule
-                  if (_currentRule != null)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 4,
-                      ),
-                      child: Text(
-                        _currentRule!.note,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontSize: 12,
-                          fontStyle: FontStyle.italic,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  // Bill input numpad
-                  BillInput(
-                    currencySymbol: calcState.currencySymbol,
-                    onAmountChanged: (amount) {
-                      calcNotifier.setBillAmount(amount);
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  // Quick tip % presets
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: _TipPresetRow(
-                      presets: AppConstants.quickTipPresets,
-                      selected: calcState.tipPercent,
-                      onSelected: (percent) {
-                        calcNotifier.setTipPercent(percent);
-                        // Save preference
-                        ref.read(preferencesRepositoryProvider)?.setLastTip(
-                              calcState.countryId,
-                              calcState.serviceType.dbValue,
-                              percent,
-                            );
-                      },
-                      theme: theme,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  // Rounding toggle
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _RoundingToggle(
-                      mode: calcState.roundingMode,
-                      onChanged: calcNotifier.setRoundingMode,
-                      theme: theme,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  // Results card
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: TipResultCard(
-                      tipAmount: calcState.result.tipAmount,
-                      totalAmount: calcState.result.totalAmount,
-                      perPersonTotal: calcState.result.perPersonTotal,
-                      perPersonTip: calcState.result.perPersonTip,
-                      tipPercent: calcState.result.tipPercent,
-                      splitCount: calcState.splitCount,
-                      currencySymbol: calcState.currencySymbol,
-                      exchangeRate: exchangeRate.hasRate &&
-                              !exchangeRate.isSameCurrency
-                          ? exchangeRate.rate
-                          : null,
-                      homeCurrencySymbol:
-                          getCurrencySymbol(homeCurrency),
-                      homeCurrencyCode: homeCurrency,
-                      localCurrencyCode: _localCurrencyCode,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  // Split control
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: SplitControl(
-                      splitCount: calcState.splitCount,
-                      onChanged: calcNotifier.setSplitCount,
-                    ),
-                  ),
-                  const SizedBox(height: 80), // Space for bottom nav + ad
-                ],
-              ),
+                  tooltip: isPro ? 'Save trip' : 'Pro: Save trip',
+                  onPressed: () => _saveToHistory(context),
+                ),
+              ],
             ),
           ),
-          // Banner ad placeholder - enable once AdMob is configured
-          // See lib/providers/ad_provider.dart for setup instructions
+
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: ServiceSelector(
+              selected: calcState.serviceType,
+              onSelected: _onServiceChanged,
+            ),
+          ),
+
+          if (_currentRule != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+              child: Text(
+                _currentRule!.note,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+
+          Expanded(
+            child: SingleChildScrollView(
+              child: _isGroupMode
+                  ? const Column(
+                      children: [
+                        SizedBox(height: 8),
+                        GroupModePanel(),
+                        SizedBox(height: 80),
+                      ],
+                    )
+                  : _SoloContent(
+                      calcState: calcState,
+                      calcNotifier: calcNotifier,
+                      theme: theme,
+                    ),
+            ),
+          ),
         ],
       ),
+    );
+  }
+}
+
+class _ModeToggle extends StatelessWidget {
+  final bool isGroupMode;
+  final ValueChanged<bool> onToggle;
+
+  const _ModeToggle({required this.isGroupMode, required this.onToggle});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onTap: () => onToggle(!isGroupMode),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isGroupMode
+              ? theme.colorScheme.primary.withValues(alpha: 0.15)
+              : theme.colorScheme.onSurface.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(20),
+          border: isGroupMode
+              ? Border.all(
+                  color: theme.colorScheme.primary.withValues(alpha: 0.4))
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isGroupMode ? Icons.group : Icons.person_outline,
+              size: 15,
+              color: isGroupMode
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              isGroupMode ? 'Group' : 'Solo',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: isGroupMode
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SoloContent extends ConsumerWidget {
+  final TipCalculatorState calcState;
+  final TipCalculatorNotifier calcNotifier;
+  final ThemeData theme;
+
+  const _SoloContent({
+    required this.calcState,
+    required this.calcNotifier,
+    required this.theme,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(
+      children: [
+        BillInput(
+          currencySymbol: calcState.currencySymbol,
+          onAmountChanged: calcNotifier.setBillAmount,
+        ),
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: _TipPresetRow(
+            presets: AppConstants.quickTipPresets,
+            selected: calcState.tipPercent,
+            onSelected: (percent) {
+              calcNotifier.setTipPercent(percent);
+              ref.read(preferencesRepositoryProvider)?.setLastTip(
+                    calcState.countryId,
+                    calcState.serviceType.dbValue,
+                    percent,
+                  );
+            },
+            theme: theme,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: _RoundingToggle(
+            mode: calcState.roundingMode,
+            onChanged: calcNotifier.setRoundingMode,
+            theme: theme,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: TipResultCard(
+            tipAmount: calcState.result.tipAmount,
+            totalAmount: calcState.result.totalAmount,
+            perPersonTotal: calcState.result.perPersonTotal,
+            perPersonTip: calcState.result.perPersonTip,
+            tipPercent: calcState.result.tipPercent,
+            splitCount: calcState.splitCount,
+            currencySymbol: calcState.currencySymbol,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: SplitControl(
+            splitCount: calcState.splitCount,
+            onChanged: calcNotifier.setSplitCount,
+          ),
+        ),
+        const SizedBox(height: 80),
+      ],
     );
   }
 }
@@ -336,9 +450,9 @@ class _RoundingToggle extends StatelessWidget {
         const SizedBox(width: 8),
         _roundChip('Off', RoundingMode.none),
         const SizedBox(width: 6),
-        _roundChip('Tip \u2191', RoundingMode.roundTipUp),
+        _roundChip('Tip ↑', RoundingMode.roundTipUp),
         const SizedBox(width: 6),
-        _roundChip('Total \u2191', RoundingMode.roundTotalUp),
+        _roundChip('Total ↑', RoundingMode.roundTotalUp),
       ],
     );
   }

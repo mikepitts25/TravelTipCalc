@@ -7,7 +7,7 @@ import 'package:sqflite/sqflite.dart';
 class AppDatabase {
   static Database? _database;
   static const _dbName = 'travel_tip_calc.db';
-  static const _dbVersion = 2;
+  static const _dbVersion = 3;
 
   AppDatabase._();
   static final AppDatabase instance = AppDatabase._();
@@ -61,6 +61,8 @@ class AppDatabase {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         date TEXT NOT NULL,
         country_id TEXT NOT NULL,
+        country_name TEXT NOT NULL DEFAULT '',
+        country_flag TEXT NOT NULL DEFAULT '',
         service_type TEXT NOT NULL,
         bill_amount REAL NOT NULL,
         tip_percent REAL NOT NULL,
@@ -68,6 +70,7 @@ class AppDatabase {
         total_amount REAL NOT NULL,
         split_count INTEGER NOT NULL DEFAULT 1,
         currency_code TEXT NOT NULL,
+        currency_symbol TEXT NOT NULL DEFAULT '',
         note TEXT,
         FOREIGN KEY (country_id) REFERENCES countries (id)
       )
@@ -82,7 +85,6 @@ class AppDatabase {
 
     await _createExchangeRatesTable(db);
 
-    // Create indexes for fast lookups
     await db.execute(
       'CREATE INDEX idx_tipping_rules_country ON tipping_rules (country_id)',
     );
@@ -90,8 +92,24 @@ class AppDatabase {
       'CREATE INDEX idx_transactions_date ON transactions (date DESC)',
     );
 
-    // Seed tipping data from bundled JSON
     await _seedData(db);
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await _createExchangeRatesTable(db);
+    }
+    if (oldVersion < 3) {
+      await db.execute(
+        "ALTER TABLE transactions ADD COLUMN country_name TEXT NOT NULL DEFAULT ''",
+      );
+      await db.execute(
+        "ALTER TABLE transactions ADD COLUMN country_flag TEXT NOT NULL DEFAULT ''",
+      );
+      await db.execute(
+        "ALTER TABLE transactions ADD COLUMN currency_symbol TEXT NOT NULL DEFAULT ''",
+      );
+    }
   }
 
   static Future<void> _createExchangeRatesTable(Database db) async {
@@ -106,14 +124,9 @@ class AppDatabase {
     ''');
   }
 
-  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 2) {
-      await _createExchangeRatesTable(db);
-    }
-  }
-
   Future<void> _seedData(Database db) async {
-    final jsonString = await rootBundle.loadString('assets/data/tipping_data.json');
+    final jsonString =
+        await rootBundle.loadString('assets/data/tipping_data.json');
     final data = json.decode(jsonString) as Map<String, dynamic>;
     final countries = data['countries'] as List<dynamic>;
 

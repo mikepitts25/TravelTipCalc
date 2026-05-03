@@ -7,6 +7,7 @@ import 'providers/preferences_provider.dart';
 import 'screens/calculator/calculator_screen.dart';
 import 'screens/country_detail/country_detail_screen.dart';
 import 'screens/country_picker/country_picker_screen.dart';
+import 'screens/history/history_screen.dart';
 import 'screens/pro/pro_upgrade_screen.dart';
 import 'screens/settings/settings_screen.dart';
 
@@ -52,7 +53,6 @@ class _MainShellState extends State<MainShell> {
   final _calculatorKey = GlobalKey<CalculatorScreenState>();
 
   void _onCountrySelected(Country country) {
-    // Go back to calculator and load the selected country
     setState(() => _currentIndex = 0);
     _calculatorKey.currentState?.loadCountry(country.id);
     Navigator.of(context).popUntil((route) => route.isFirst);
@@ -102,6 +102,7 @@ class _MainShellState extends State<MainShell> {
             onCountrySelected: _onCountrySelected,
             onCountryInfoTap: _openCountryDetail,
           ),
+          HistoryScreen(onUpgradeTap: _openProUpgrade),
           SettingsScreen(onUpgradeTap: _openProUpgrade),
         ],
       ),
@@ -118,6 +119,11 @@ class _MainShellState extends State<MainShell> {
             icon: Icon(Icons.explore_outlined),
             activeIcon: Icon(Icons.explore),
             label: 'Explore',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.history_outlined),
+            activeIcon: Icon(Icons.history),
+            label: 'History',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings_outlined),

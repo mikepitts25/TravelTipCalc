@@ -98,10 +98,6 @@ class _MainShellState extends State<MainShell> {
             key: _calculatorKey,
             onCountryTap: _openCountryPicker,
           ),
-          CountryPickerScreen(
-            onCountrySelected: _onCountrySelected,
-            onCountryInfoTap: _openCountryDetail,
-          ),
           HistoryScreen(onUpgradeTap: _openProUpgrade),
           SettingsScreen(onUpgradeTap: _openProUpgrade),
         ],
@@ -114,11 +110,6 @@ class _MainShellState extends State<MainShell> {
             icon: Icon(Icons.calculate_outlined),
             activeIcon: Icon(Icons.calculate),
             label: 'Calculator',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.explore_outlined),
-            activeIcon: Icon(Icons.explore),
-            label: 'Explore',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.history_outlined),

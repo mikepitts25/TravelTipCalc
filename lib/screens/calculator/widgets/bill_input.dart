@@ -6,11 +6,15 @@ import 'package:flutter/services.dart';
 class BillInput extends StatefulWidget {
   final String currencySymbol;
   final ValueChanged<double> onAmountChanged;
+  final double? exchangeRate;
+  final String? homeCurrencySymbol;
 
   const BillInput({
     super.key,
     required this.currencySymbol,
     required this.onAmountChanged,
+    this.exchangeRate,
+    this.homeCurrencySymbol,
   });
 
   @override
@@ -68,30 +72,47 @@ class _BillInputState extends State<BillInput> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
+    final showConversion = widget.exchangeRate != null &&
+        widget.homeCurrencySymbol != null &&
+        _amount > 0;
+    final convertedAmount =
+        showConversion ? _amount * widget.exchangeRate! : null;
+
     return Column(
       children: [
         // Amount display
         Container(
           padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
+          child: Column(
             children: [
-              Text(
-                widget.currencySymbol,
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.7),
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.currencySymbol,
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    _displayAmount,
+                    style: theme.textTheme.headlineLarge?.copyWith(
+                      fontSize: 48,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -1,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 4),
-              Text(
-                _displayAmount,
-                style: theme.textTheme.headlineLarge?.copyWith(
-                  fontSize: 48,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -1,
+              if (convertedAmount != null)
+                Text(
+                  '≈ ${widget.homeCurrencySymbol}${convertedAmount.toStringAsFixed(2)}',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                  ),
                 ),
-              ),
             ],
           ),
         ),

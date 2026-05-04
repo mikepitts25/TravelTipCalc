@@ -3,7 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config/constants.dart';
-import '../../../providers/group_calculator_provider.dart' show GroupCalculatorState, GroupPerson, groupCalculatorProvider;
+import '../../../config/currencies.dart';
+import '../../../providers/exchange_rate_provider.dart';
+import '../../../providers/group_calculator_provider.dart'
+    show GroupCalculatorState, GroupPerson, groupCalculatorProvider;
+import '../../../providers/preferences_provider.dart';
 import '../../../utils/currency_formatter.dart';
 
 class GroupModePanel extends ConsumerStatefulWidget {
@@ -19,6 +23,13 @@ class _GroupModePanelState extends ConsumerState<GroupModePanel> {
     final theme = Theme.of(context);
     final state = ref.watch(groupCalculatorProvider);
     final notifier = ref.read(groupCalculatorProvider.notifier);
+    final exchangeRateState = ref.watch(exchangeRateProvider);
+    final homeCurrency = ref.watch(homeCurrencyProvider);
+
+    final rate = exchangeRateState.hasRate && !exchangeRateState.isSameCurrency
+        ? exchangeRateState.rate
+        : null;
+    final homeSym = getCurrencySymbol(homeCurrency);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -35,8 +46,7 @@ class _GroupModePanelState extends ConsumerState<GroupModePanel> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: AppConstants.quickTipPresets.map((p) {
-                      final isSelected =
-                          (p - state.tipPercent).abs() < 0.5;
+                      final isSelected = (p - state.tipPercent).abs() < 0.5;
                       return Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: GestureDetector(
@@ -86,6 +96,8 @@ class _GroupModePanelState extends ConsumerState<GroupModePanel> {
             person: person,
             tipPercent: state.tipPercent,
             currencySymbol: state.currencySymbol,
+            exchangeRate: rate,
+            homeCurrencySymbol: homeSym,
             canDelete: state.persons.length > 1,
             onNameChanged: (name) =>
                 notifier.updatePersonName(person.id, name),
@@ -113,7 +125,15 @@ class _GroupModePanelState extends ConsumerState<GroupModePanel> {
         // Grand total card
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _GroupTotalsCard(state: state),
+          child: _GroupTotalsCard(
+            state: state,
+            exchangeRate: rate,
+            homeCurrencySymbol: homeSym,
+            homeCurrencyCode: homeCurrency,
+            localCurrencyCode: state.countryId.isNotEmpty
+                ? state.currencySymbol
+                : null,
+          ),
         ),
       ],
     );
@@ -124,6 +144,8 @@ class _PersonRow extends StatefulWidget {
   final GroupPerson person;
   final double tipPercent;
   final String currencySymbol;
+  final double? exchangeRate;
+  final String? homeCurrencySymbol;
   final bool canDelete;
   final ValueChanged<String> onNameChanged;
   final ValueChanged<double> onBillChanged;
@@ -134,6 +156,8 @@ class _PersonRow extends StatefulWidget {
     required this.person,
     required this.tipPercent,
     required this.currencySymbol,
+    this.exchangeRate,
+    this.homeCurrencySymbol,
     required this.canDelete,
     required this.onNameChanged,
     required this.onBillChanged,
@@ -164,6 +188,14 @@ class _PersonRowState extends State<_PersonRow> {
     _nameController.dispose();
     _billController.dispose();
     super.dispose();
+  }
+
+  String? _convert(double amount) {
+    if (widget.exchangeRate == null || widget.homeCurrencySymbol == null) {
+      return null;
+    }
+    final converted = amount * widget.exchangeRate!;
+    return '≈ ${widget.homeCurrencySymbol}${converted.toStringAsFixed(2)}';
   }
 
   @override
@@ -250,7 +282,7 @@ class _PersonRowState extends State<_PersonRow> {
                       },
                     ),
                   ),
-                  if (hasBill) ...[
+                  if (hasBill)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
@@ -266,9 +298,16 @@ class _PersonRowState extends State<_PersonRow> {
                             fontWeight: FontWeight.w700,
                           ),
                         ),
+                        if (_convert(total) != null)
+                          Text(
+                            _convert(total)!,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurface
+                                  .withValues(alpha: 0.5),
+                            ),
+                          ),
                       ],
                     ),
-                  ],
                 ],
               ),
             ],
@@ -281,13 +320,30 @@ class _PersonRowState extends State<_PersonRow> {
 
 class _GroupTotalsCard extends StatelessWidget {
   final GroupCalculatorState state;
+  final double? exchangeRate;
+  final String? homeCurrencySymbol;
+  final String? homeCurrencyCode;
+  final String? localCurrencyCode;
 
-  const _GroupTotalsCard({required this.state});
+  const _GroupTotalsCard({
+    required this.state,
+    this.exchangeRate,
+    this.homeCurrencySymbol,
+    this.homeCurrencyCode,
+    this.localCurrencyCode,
+  });
+
+  String? _convert(double amount) {
+    if (exchangeRate == null || homeCurrencySymbol == null) return null;
+    final converted = amount * exchangeRate!;
+    return '≈ $homeCurrencySymbol${converted.toStringAsFixed(2)}';
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final sym = state.currencySymbol;
+    final showConversion = exchangeRate != null && homeCurrencySymbol != null;
 
     return Card(
       color: theme.colorScheme.primary.withValues(alpha: 0.08),
@@ -295,9 +351,38 @@ class _GroupTotalsCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
+            // Exchange rate badge
+            if (showConversion && homeCurrencyCode != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.currency_exchange,
+                          size: 14, color: theme.colorScheme.primary),
+                      const SizedBox(width: 6),
+                      Text(
+                        '1 ${state.countryId.isNotEmpty ? '' : ''}${exchangeRate! < 1 ? exchangeRate!.toStringAsFixed(4) : exchangeRate!.toStringAsFixed(2)} $homeCurrencyCode per unit',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             _TotalsRow(
               label: 'Combined Bill',
               value: CurrencyFormatter.formatCompact(state.totalBill, sym),
+              converted: _convert(state.totalBill),
               theme: theme,
             ),
             const SizedBox(height: 6),
@@ -305,6 +390,7 @@ class _GroupTotalsCard extends StatelessWidget {
               label:
                   'Total Tips (${CurrencyFormatter.formatPercent(state.tipPercent)})',
               value: CurrencyFormatter.formatCompact(state.totalTip, sym),
+              converted: _convert(state.totalTip),
               theme: theme,
               valueColor: theme.colorScheme.primary,
             ),
@@ -317,6 +403,7 @@ class _GroupTotalsCard extends StatelessWidget {
             _TotalsRow(
               label: 'Grand Total',
               value: CurrencyFormatter.formatCompact(state.grandTotal, sym),
+              converted: _convert(state.grandTotal),
               theme: theme,
               labelStyle: theme.textTheme.titleMedium
                   ?.copyWith(fontWeight: FontWeight.w700),
@@ -335,6 +422,7 @@ class _GroupTotalsCard extends StatelessWidget {
 class _TotalsRow extends StatelessWidget {
   final String label;
   final String value;
+  final String? converted;
   final ThemeData theme;
   final Color? valueColor;
   final TextStyle? labelStyle;
@@ -343,6 +431,7 @@ class _TotalsRow extends StatelessWidget {
   const _TotalsRow({
     required this.label,
     required this.value,
+    this.converted,
     required this.theme,
     this.valueColor,
     this.labelStyle,
@@ -353,15 +442,28 @@ class _TotalsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Text(label, style: labelStyle ?? theme.textTheme.bodyMedium),
-        Text(
-          value,
-          style: valueStyle ??
-              theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: valueColor,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              value,
+              style: valueStyle ??
+                  theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: valueColor,
+                  ),
+            ),
+            if (converted != null)
+              Text(
+                converted!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
               ),
+          ],
         ),
       ],
     );

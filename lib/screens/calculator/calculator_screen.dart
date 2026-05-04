@@ -352,6 +352,8 @@ class _SoloContent extends ConsumerWidget {
         BillInput(
           currencySymbol: calcState.currencySymbol,
           onAmountChanged: calcNotifier.setBillAmount,
+          exchangeRate: exchangeRate,
+          homeCurrencySymbol: homeCurrencySymbol,
         ),
         const SizedBox(height: 12),
         Padding(

@@ -14,6 +14,8 @@ build/
 # macOS
 .DS_Store
 *.plist
+!ios/Flutter/AppFrameworkInfo.plist
+!ios/Runner/Info.plist
 
 # Android
 android/.gradle/
@@ -29,9 +31,10 @@ ios/Pods/
 ios/.symlinks/
 ios/Flutter/Flutter.framework
 ios/Flutter/Flutter.podspec
-ios/Runner.xcworkspace/
+ios/Runner.xcworkspace/xcshareddata/
+ios/Runner.xcworkspace/xcuserdata/
+!ios/Runner.xcworkspace/contents.xcworkspacedata
 
 # Misc
 *.log
 .env
-pubspec.lock

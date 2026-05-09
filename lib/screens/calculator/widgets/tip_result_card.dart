@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../providers/exchange_rate_provider.dart';
 import '../../../utils/currency_formatter.dart';
 
-class TipResultCard extends StatelessWidget {
+class TipResultCard extends ConsumerWidget {
   final double tipAmount;
   final double totalAmount;
   final double perPersonTotal;
@@ -42,9 +44,10 @@ class TipResultCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final showSplit = splitCount > 1;
+    final isRefreshing = ref.watch(exchangeRateProvider).isLoading;
 
     return Card(
       child: Padding(
@@ -55,8 +58,7 @@ class TipResultCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.only(left: 12, right: 4, top: 4, bottom: 4),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
@@ -76,6 +78,31 @@ class TipResultCard extends StatelessWidget {
                           color: theme.colorScheme.primary,
                           fontWeight: FontWeight.w600,
                         ),
+                      ),
+                      const SizedBox(width: 4),
+                      SizedBox(
+                        width: 28,
+                        height: 28,
+                        child: isRefreshing
+                            ? Padding(
+                                padding: const EdgeInsets.all(6),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: theme.colorScheme.primary,
+                                ),
+                              )
+                            : IconButton(
+                                padding: EdgeInsets.zero,
+                                icon: Icon(
+                                  Icons.refresh,
+                                  size: 16,
+                                  color: theme.colorScheme.primary,
+                                ),
+                                onPressed: () => ref
+                                    .read(exchangeRateProvider.notifier)
+                                    .refresh(),
+                                tooltip: 'Refresh rate',
+                              ),
                       ),
                     ],
                   ),

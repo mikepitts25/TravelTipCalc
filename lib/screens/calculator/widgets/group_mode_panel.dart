@@ -133,6 +133,9 @@ class _GroupModePanelState extends ConsumerState<GroupModePanel> {
             localCurrencyCode: state.countryId.isNotEmpty
                 ? state.currencySymbol
                 : null,
+            isRefreshing: exchangeRateState.isLoading,
+            onRefresh: () =>
+                ref.read(exchangeRateProvider.notifier).refresh(),
           ),
         ),
       ],
@@ -324,6 +327,8 @@ class _GroupTotalsCard extends StatelessWidget {
   final String? homeCurrencySymbol;
   final String? homeCurrencyCode;
   final String? localCurrencyCode;
+  final bool isRefreshing;
+  final VoidCallback? onRefresh;
 
   const _GroupTotalsCard({
     required this.state,
@@ -331,6 +336,8 @@ class _GroupTotalsCard extends StatelessWidget {
     this.homeCurrencySymbol,
     this.homeCurrencyCode,
     this.localCurrencyCode,
+    this.isRefreshing = false,
+    this.onRefresh,
   });
 
   String? _convert(double amount) {
@@ -356,8 +363,8 @@ class _GroupTotalsCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.only(
+                      left: 12, right: 4, top: 4, bottom: 4),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
@@ -369,11 +376,34 @@ class _GroupTotalsCard extends StatelessWidget {
                           size: 14, color: theme.colorScheme.primary),
                       const SizedBox(width: 6),
                       Text(
-                        '1 ${state.countryId.isNotEmpty ? '' : ''}${exchangeRate! < 1 ? exchangeRate!.toStringAsFixed(4) : exchangeRate!.toStringAsFixed(2)} $homeCurrencyCode per unit',
+                        '${exchangeRate! < 1 ? exchangeRate!.toStringAsFixed(4) : exchangeRate!.toStringAsFixed(2)} $homeCurrencyCode per unit',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.primary,
                           fontWeight: FontWeight.w600,
                         ),
+                      ),
+                      const SizedBox(width: 4),
+                      SizedBox(
+                        width: 28,
+                        height: 28,
+                        child: isRefreshing
+                            ? Padding(
+                                padding: const EdgeInsets.all(6),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: theme.colorScheme.primary,
+                                ),
+                              )
+                            : IconButton(
+                                padding: EdgeInsets.zero,
+                                icon: Icon(
+                                  Icons.refresh,
+                                  size: 16,
+                                  color: theme.colorScheme.primary,
+                                ),
+                                onPressed: onRefresh,
+                                tooltip: 'Refresh rate',
+                              ),
                       ),
                     ],
                   ),

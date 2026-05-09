@@ -10,7 +10,7 @@ class CurrencyFormatter {
       return format.format(amount);
     } catch (_) {
       // Fallback if currency code not recognized
-      return '${currencyCode} ${amount.toStringAsFixed(2)}';
+      return '$currencyCode ${amount.toStringAsFixed(2)}';
     }
   }
 

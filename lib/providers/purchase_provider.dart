@@ -1,7 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'preferences_provider.dart';
-
 class PurchaseState {
   final bool isAvailable;
   final bool isPurchasing;
@@ -32,9 +30,7 @@ class PurchaseState {
 /// 2. Configure StoreKit in Xcode for iOS
 /// 3. Restore the full implementation from git history
 class PurchaseNotifier extends StateNotifier<PurchaseState> {
-  final Ref _ref;
-
-  PurchaseNotifier(this._ref) : super(const PurchaseState());
+  PurchaseNotifier() : super(const PurchaseState());
 
   Future<void> buyPro() async {
     state = state.copyWith(
@@ -49,5 +45,5 @@ class PurchaseNotifier extends StateNotifier<PurchaseState> {
 
 final purchaseProvider =
     StateNotifierProvider<PurchaseNotifier, PurchaseState>(
-  (ref) => PurchaseNotifier(ref),
+  (_) => PurchaseNotifier(),
 );

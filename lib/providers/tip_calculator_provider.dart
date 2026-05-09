@@ -118,7 +118,9 @@ class TipCalculatorNotifier extends StateNotifier<TipCalculatorState> {
 
   void setSplitCount(int count) {
     if (count < AppConstants.minSplitCount ||
-        count > AppConstants.maxSplitCount) return;
+        count > AppConstants.maxSplitCount) {
+      return;
+    }
     state = state.copyWith(splitCount: count);
     _recalculate();
   }

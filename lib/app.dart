@@ -10,6 +10,7 @@ import 'screens/country_picker/country_picker_screen.dart';
 import 'screens/history/history_screen.dart';
 import 'screens/pro/pro_upgrade_screen.dart';
 import 'screens/settings/settings_screen.dart';
+import 'widgets/ad_banner_slot.dart';
 
 class TravelTipCalcApp extends ConsumerWidget {
   const TravelTipCalcApp({super.key});
@@ -91,15 +92,22 @@ class _MainShellState extends State<MainShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
+      body: Column(
         children: [
-          CalculatorScreen(
-            key: _calculatorKey,
-            onCountryTap: _openCountryPicker,
+          Expanded(
+            child: IndexedStack(
+              index: _currentIndex,
+              children: [
+                CalculatorScreen(
+                  key: _calculatorKey,
+                  onCountryTap: _openCountryPicker,
+                ),
+                HistoryScreen(onUpgradeTap: _openProUpgrade),
+                SettingsScreen(onUpgradeTap: _openProUpgrade),
+              ],
+            ),
           ),
-          HistoryScreen(onUpgradeTap: _openProUpgrade),
-          SettingsScreen(onUpgradeTap: _openProUpgrade),
+          AdBannerSlot(enabled: _currentIndex == 0),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(

@@ -138,7 +138,7 @@ class CalculatorScreenState extends ConsumerState<CalculatorScreen> {
     if (!isPro) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Trip history is a Pro feature — upgrade in Settings'),
+          content: Text('Trip history is planned for a future update'),
           duration: Duration(seconds: 3),
         ),
       );
@@ -216,7 +216,7 @@ class CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                         ? theme.colorScheme.primary
                         : theme.colorScheme.onSurface.withValues(alpha: 0.4),
                   ),
-                  tooltip: isPro ? 'Save trip' : 'Pro: Save trip',
+                  tooltip: isPro ? 'Save trip' : 'Trip history coming soon',
                   onPressed: () => _saveToHistory(context),
                 ),
               ],

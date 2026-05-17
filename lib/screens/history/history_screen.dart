@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/models/transaction.dart';
 import '../../providers/history_provider.dart';
 import '../../providers/preferences_provider.dart';
+import '../../providers/purchase_provider.dart';
 import '../../utils/currency_formatter.dart';
 
 class HistoryScreen extends ConsumerStatefulWidget {
@@ -28,6 +29,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isPro = ref.watch(proStatusProvider);
+    final purchaseState = ref.watch(purchaseProvider);
     final historyState = ref.watch(historyProvider);
 
     return Scaffold(
@@ -58,10 +60,13 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
             ),
         ],
       ),
-      body: isPro ? _ProHistoryBody(historyState: historyState) : _PaywallBody(
-        onUpgradeTap: widget.onUpgradeTap,
-        theme: theme,
-      ),
+      body: isPro
+          ? _ProHistoryBody(historyState: historyState)
+          : _PaywallBody(
+              onUpgradeTap: widget.onUpgradeTap,
+              purchaseAvailable: purchaseState.isAvailable,
+              theme: theme,
+            ),
     );
   }
 
@@ -95,9 +100,14 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
 
 class _PaywallBody extends StatelessWidget {
   final VoidCallback onUpgradeTap;
+  final bool purchaseAvailable;
   final ThemeData theme;
 
-  const _PaywallBody({required this.onUpgradeTap, required this.theme});
+  const _PaywallBody({
+    required this.onUpgradeTap,
+    required this.purchaseAvailable,
+    required this.theme,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -128,28 +138,32 @@ class _PaywallBody extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'Save every calculation and review your past trips. Export your history as CSV.',
+              purchaseAvailable
+                  ? 'Save every calculation and review your past trips. Export your history as CSV.'
+                  : 'Trip history export is planned for a future update.',
               style: theme.textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton.icon(
-                onPressed: onUpgradeTap,
-                icon: const Icon(Icons.star),
-                label: const Text(
-                  'Upgrade to Pro',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                ),
-                style: ElevatedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+            if (purchaseAvailable) ...[
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton.icon(
+                  onPressed: onUpgradeTap,
+                  icon: const Icon(Icons.star),
+                  label: const Text(
+                    'Upgrade to Pro',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ),

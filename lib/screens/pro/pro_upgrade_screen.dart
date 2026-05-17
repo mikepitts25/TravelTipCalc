@@ -41,8 +41,11 @@ class ProUpgradeScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'One-time purchase. No subscriptions.',
+              purchaseState.isAvailable
+                  ? 'One-time purchase. No subscriptions.'
+                  : 'Pro upgrades are not available in this build.',
               style: theme.textTheme.bodyMedium,
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
 
@@ -74,39 +77,41 @@ class ProUpgradeScreen extends ConsumerWidget {
 
             const SizedBox(height: 32),
 
-            // Purchase button
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: purchaseState.isPurchasing
-                    ? null
-                    : () {
-                        ref.read(purchaseProvider.notifier).buyPro();
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: theme.colorScheme.primary,
-                  foregroundColor: theme.colorScheme.onPrimary,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+            if (purchaseState.isAvailable) ...[
+              // Purchase button
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: purchaseState.isPurchasing
+                      ? null
+                      : () {
+                          ref.read(purchaseProvider.notifier).buyPro();
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.colorScheme.primary,
+                    foregroundColor: theme.colorScheme.onPrimary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
                   ),
-                  elevation: 0,
-                ),
-                child: purchaseState.isPurchasing
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Text(
-                        'Upgrade for \$${AppConstants.proPrice.toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
+                  child: purchaseState.isPurchasing
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(
+                          'Upgrade for \$${AppConstants.proPrice.toStringAsFixed(2)}',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
+                ),
               ),
-            ),
+            ],
 
             if (purchaseState.error != null) ...[
               const SizedBox(height: 12),
@@ -116,13 +121,15 @@ class ProUpgradeScreen extends ConsumerWidget {
               ),
             ],
 
-            const SizedBox(height: 16),
-            TextButton(
-              onPressed: () {
-                ref.read(purchaseProvider.notifier).restorePurchases();
-              },
-              child: const Text('Restore Purchases'),
-            ),
+            if (purchaseState.isAvailable) ...[
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () {
+                  ref.read(purchaseProvider.notifier).restorePurchases();
+                },
+                child: const Text('Restore Purchases'),
+              ),
+            ],
           ],
         ),
       ),

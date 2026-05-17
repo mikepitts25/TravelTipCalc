@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app.dart';
+import 'services/ad_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,8 +14,7 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  // Note: AdMob initialization is deferred until google_mobile_ads is
-  // re-enabled in pubspec.yaml and App IDs are configured natively.
+  await AdService.initialize();
 
   runApp(
     const ProviderScope(

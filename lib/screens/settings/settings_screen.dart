@@ -37,6 +37,7 @@ class SettingsScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final themeMode = ref.watch(themeProvider);
     final isPro = ref.watch(proStatusProvider);
+    final purchaseState = ref.watch(purchaseProvider);
     final homeCurrency = ref.watch(homeCurrencyProvider);
     final currencyInfo = getCurrencyInfo(homeCurrency);
 
@@ -46,7 +47,7 @@ class SettingsScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(16),
         children: [
           // Pro status card
-          if (!isPro)
+          if (!isPro && purchaseState.isAvailable)
             Card(
               color: theme.colorScheme.primary.withValues(alpha: 0.1),
               child: InkWell(
@@ -99,7 +100,7 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               ),
             )
-          else
+          else if (isPro)
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(20),
@@ -207,20 +208,22 @@ class SettingsScreen extends ConsumerWidget {
                     style: theme.textTheme.bodyMedium,
                   ),
                 ),
-                Divider(
-                  height: 1,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.restore),
-                  title: const Text('Restore Purchases'),
-                  onTap: () {
-                    ref.read(purchaseProvider.notifier).restorePurchases();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Restoring purchases...')),
-                    );
-                  },
-                ),
+                if (purchaseState.isAvailable) ...[
+                  Divider(
+                    height: 1,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.restore),
+                    title: const Text('Restore Purchases'),
+                    onTap: () {
+                      ref.read(purchaseProvider.notifier).restorePurchases();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Restoring purchases...')),
+                      );
+                    },
+                  ),
+                ],
                 Divider(
                   height: 1,
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.1),

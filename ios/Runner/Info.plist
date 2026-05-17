@@ -16,6 +16,8 @@
 	<string>6.0</string>
 	<key>CFBundleName</key>
 	<string>travel_tip_calc</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Travel Tip Calc uses your location to suggest tipping customs for the country you are in.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Travel Tip Calc uses your location to suggest tipping customs for the country you are in.</string>
 	<key>CFBundlePackageType</key>

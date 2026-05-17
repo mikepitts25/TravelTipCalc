@@ -8,6 +8,7 @@ void main() {
         AdConfig.resolveBannerAdUnitId(
           isIOS: true,
           isRelease: false,
+          useTestAds: false,
           productionIOSAdUnitId: '',
           productionAndroidAdUnitId: '',
         ),
@@ -18,6 +19,7 @@ void main() {
         AdConfig.resolveBannerAdUnitId(
           isIOS: false,
           isRelease: false,
+          useTestAds: false,
           productionIOSAdUnitId: '',
           productionAndroidAdUnitId: '',
         ),
@@ -30,6 +32,7 @@ void main() {
         AdConfig.resolveBannerAdUnitId(
           isIOS: true,
           isRelease: true,
+          useTestAds: false,
           productionIOSAdUnitId: 'ios-unit',
           productionAndroidAdUnitId: 'android-unit',
         ),
@@ -40,6 +43,7 @@ void main() {
         AdConfig.resolveBannerAdUnitId(
           isIOS: false,
           isRelease: true,
+          useTestAds: false,
           productionIOSAdUnitId: 'ios-unit',
           productionAndroidAdUnitId: 'android-unit',
         ),
@@ -52,6 +56,7 @@ void main() {
         AdConfig.resolveBannerAdUnitId(
           isIOS: true,
           isRelease: true,
+          useTestAds: false,
           productionIOSAdUnitId: '',
           productionAndroidAdUnitId: 'android-unit',
         ),
@@ -62,10 +67,35 @@ void main() {
         AdConfig.resolveBannerAdUnitId(
           isIOS: false,
           isRelease: true,
+          useTestAds: false,
           productionIOSAdUnitId: 'ios-unit',
           productionAndroidAdUnitId: '',
         ),
         '',
+      );
+    });
+
+    test('can force Google demo banner units for release QA builds', () {
+      expect(
+        AdConfig.resolveBannerAdUnitId(
+          isIOS: true,
+          isRelease: true,
+          useTestAds: true,
+          productionIOSAdUnitId: 'ios-unit',
+          productionAndroidAdUnitId: 'android-unit',
+        ),
+        'ca-app-pub-3940256099942544/2934735716',
+      );
+
+      expect(
+        AdConfig.resolveBannerAdUnitId(
+          isIOS: false,
+          isRelease: true,
+          useTestAds: true,
+          productionIOSAdUnitId: 'ios-unit',
+          productionAndroidAdUnitId: 'android-unit',
+        ),
+        'ca-app-pub-3940256099942544/6300978111',
       );
     });
   });

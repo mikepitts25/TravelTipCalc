@@ -9,6 +9,12 @@ class AdConfig {
   // Supply production units at release build time:
   // --dart-define=ADMOB_IOS_BANNER_AD_UNIT_ID=ca-app-pub-.../...
   // --dart-define=ADMOB_ANDROID_BANNER_AD_UNIT_ID=ca-app-pub-.../...
+  // Use Google's test banner units in release builds for TestFlight/beta QA:
+  // --dart-define=ADMOB_USE_TEST_ADS=true
+  static const bool _useTestAds = bool.fromEnvironment(
+    'ADMOB_USE_TEST_ADS',
+    defaultValue: false,
+  );
   static const String _productionIOSBannerAdUnitId = String.fromEnvironment(
     'ADMOB_IOS_BANNER_AD_UNIT_ID',
     defaultValue: '',
@@ -27,6 +33,7 @@ class AdConfig {
     return resolveBannerAdUnitId(
       isIOS: platform == TargetPlatform.iOS,
       isRelease: kReleaseMode,
+      useTestAds: _useTestAds,
       productionIOSAdUnitId: _productionIOSBannerAdUnitId,
       productionAndroidAdUnitId: _productionAndroidBannerAdUnitId,
     );
@@ -37,10 +44,11 @@ class AdConfig {
   static String resolveBannerAdUnitId({
     required bool isIOS,
     required bool isRelease,
+    required bool useTestAds,
     required String productionIOSAdUnitId,
     required String productionAndroidAdUnitId,
   }) {
-    if (!isRelease) {
+    if (!isRelease || useTestAds) {
       return isIOS ? _testIOSBannerAdUnitId : _testAndroidBannerAdUnitId;
     }
 

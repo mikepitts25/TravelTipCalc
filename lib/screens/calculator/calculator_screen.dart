@@ -30,6 +30,7 @@ class CalculatorScreen extends ConsumerStatefulWidget {
 // ignore: library_private_types_in_public_api
 class CalculatorScreenState extends ConsumerState<CalculatorScreen> {
   final _tippingRepo = TippingRepository();
+  final _scrollController = ScrollController();
   String _countryFlag = '\u{1F30D}';
   String _countryName = 'Select Country';
   String _currencyCode = 'USD';
@@ -50,6 +51,12 @@ class CalculatorScreenState extends ConsumerState<CalculatorScreen> {
         }
       });
     });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _detectOrLoadCountry() async {
@@ -189,7 +196,10 @@ class CalculatorScreenState extends ConsumerState<CalculatorScreen> {
 
           Expanded(
             child: Scrollbar(
+              controller: _scrollController,
               child: SingleChildScrollView(
+                controller: _scrollController,
+                primary: false,
                 child: _isGroupMode
                     ? const Column(
                         children: [

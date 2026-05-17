@@ -4,7 +4,6 @@ class PreferencesRepository {
   static const _themeKey = 'theme';
   static const _defaultTipKey = 'default_tip_percent';
   static const _lastCountryKey = 'last_country';
-  static const _isProKey = 'is_pro';
   static const _homeCurrencyKey = 'home_currency';
 
   final SharedPreferences _prefs;
@@ -16,8 +15,7 @@ class PreferencesRepository {
   Future<void> setTheme(String value) => _prefs.setString(_themeKey, value);
 
   // Default tip percent
-  double get defaultTipPercent =>
-      _prefs.getDouble(_defaultTipKey) ?? 18.0;
+  double get defaultTipPercent => _prefs.getDouble(_defaultTipKey) ?? 18.0;
   Future<void> setDefaultTipPercent(double value) =>
       _prefs.setDouble(_defaultTipKey, value);
 
@@ -25,10 +23,6 @@ class PreferencesRepository {
   String? get lastCountry => _prefs.getString(_lastCountryKey);
   Future<void> setLastCountry(String id) =>
       _prefs.setString(_lastCountryKey, id);
-
-  // Pro status
-  bool get isPro => _prefs.getBool(_isProKey) ?? false;
-  Future<void> setIsPro(bool value) => _prefs.setBool(_isProKey, value);
 
   // Home currency (user's preferred display currency)
   String get homeCurrency => _prefs.getString(_homeCurrencyKey) ?? 'USD';

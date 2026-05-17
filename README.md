@@ -19,7 +19,8 @@ A modern, offline-first travel tip calculator built with Flutter. Suggests tip a
 | Tier | Price | Features |
 |------|-------|----------|
 | Free | $0 | Full calculator + banner ads |
-| Pro | $4.99 (one-time) | Ad-free + transaction history + CSV/PDF export |
+
+Paid upgrades and trip history are deferred. The current release focus is the free calculator experience with non-intrusive banner ads.
 
 ## Tech Stack
 
@@ -27,7 +28,6 @@ A modern, offline-first travel tip calculator built with Flutter. Suggests tip a
 - **State Management**: Riverpod
 - **Database**: SQLite (sqflite) - bundled tipping data, no cloud required
 - **Ads**: Google AdMob (banner only)
-- **Purchases**: in_app_purchase (StoreKit / Play Billing)
 - **Location**: geolocator + geocoding
 
 ## Getting Started
@@ -47,16 +47,15 @@ lib/
 ├── config/                    # Theme, constants, ad config
 ├── data/
 │   ├── database/              # SQLite setup, seed data
-│   ├── models/                # Country, TippingRule, Transaction
+│   ├── models/                # Country, TippingRule
 │   └── repositories/          # Data access layer
 ├── providers/                 # Riverpod state providers
 ├── screens/
 │   ├── calculator/            # Main calculator screen + widgets
 │   ├── country_picker/        # Browse/search countries
 │   ├── country_detail/        # Etiquette guide per country
-│   ├── settings/              # User preferences
-│   └── pro/                   # Pro upgrade screen
-├── services/                  # Location, IAP, ad services
+│   └── settings/              # User preferences
+├── services/                  # Location and ad services
 └── utils/                     # Calculator math, formatting, rounding
 ```
 

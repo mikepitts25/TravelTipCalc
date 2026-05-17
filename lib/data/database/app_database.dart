@@ -57,26 +57,6 @@ class AppDatabase {
     ''');
 
     await db.execute('''
-      CREATE TABLE transactions (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        date TEXT NOT NULL,
-        country_id TEXT NOT NULL,
-        country_name TEXT NOT NULL DEFAULT '',
-        country_flag TEXT NOT NULL DEFAULT '',
-        service_type TEXT NOT NULL,
-        bill_amount REAL NOT NULL,
-        tip_percent REAL NOT NULL,
-        tip_amount REAL NOT NULL,
-        total_amount REAL NOT NULL,
-        split_count INTEGER NOT NULL DEFAULT 1,
-        currency_code TEXT NOT NULL,
-        currency_symbol TEXT NOT NULL DEFAULT '',
-        note TEXT,
-        FOREIGN KEY (country_id) REFERENCES countries (id)
-      )
-    ''');
-
-    await db.execute('''
       CREATE TABLE user_preferences (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL
@@ -88,27 +68,12 @@ class AppDatabase {
     await db.execute(
       'CREATE INDEX idx_tipping_rules_country ON tipping_rules (country_id)',
     );
-    await db.execute(
-      'CREATE INDEX idx_transactions_date ON transactions (date DESC)',
-    );
-
     await _seedData(db);
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
       await _createExchangeRatesTable(db);
-    }
-    if (oldVersion < 3) {
-      await db.execute(
-        "ALTER TABLE transactions ADD COLUMN country_name TEXT NOT NULL DEFAULT ''",
-      );
-      await db.execute(
-        "ALTER TABLE transactions ADD COLUMN country_flag TEXT NOT NULL DEFAULT ''",
-      );
-      await db.execute(
-        "ALTER TABLE transactions ADD COLUMN currency_symbol TEXT NOT NULL DEFAULT ''",
-      );
     }
   }
 

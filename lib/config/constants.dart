@@ -11,8 +11,4 @@ class AppConstants {
 
   // Quick tip percentages shown as presets
   static const List<double> quickTipPresets = [10, 15, 18, 20, 25];
-
-  // IAP product ID
-  static const String proProductId = 'travel_tip_calc_pro';
-  static const double proPrice = 4.99;
 }

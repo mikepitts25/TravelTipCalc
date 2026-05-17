@@ -4,12 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config/constants.dart';
 import '../../config/currencies.dart';
 import '../../providers/preferences_provider.dart';
-import '../../providers/purchase_provider.dart';
 
 class SettingsScreen extends ConsumerWidget {
-  final VoidCallback onUpgradeTap;
-
-  const SettingsScreen({super.key, required this.onUpgradeTap});
+  const SettingsScreen({super.key});
 
   void _showCurrencyPicker(
     BuildContext context,
@@ -36,8 +33,6 @@ class SettingsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final themeMode = ref.watch(themeProvider);
-    final isPro = ref.watch(proStatusProvider);
-    final purchaseState = ref.watch(purchaseProvider);
     final homeCurrency = ref.watch(homeCurrencyProvider);
     final currencyInfo = getCurrencyInfo(homeCurrency);
 
@@ -46,82 +41,6 @@ class SettingsScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Pro status card
-          if (!isPro && purchaseState.isAvailable)
-            Card(
-              color: theme.colorScheme.primary.withValues(alpha: 0.1),
-              child: InkWell(
-                onTap: onUpgradeTap,
-                borderRadius: BorderRadius.circular(16),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.primary.withValues(alpha: 0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.star,
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Upgrade to Pro',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Remove ads & unlock trip history export',
-                              style: theme.textTheme.bodyMedium,
-                            ),
-                          ],
-                        ),
-                      ),
-                      Text(
-                        '\$${AppConstants.proPrice.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 18,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            )
-          else if (isPro)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Row(
-                  children: [
-                    Icon(Icons.verified, color: theme.colorScheme.primary),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Pro Member',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-          const SizedBox(height: 24),
-
           // Appearance section
           Text('Appearance', style: theme.textTheme.labelLarge),
           const SizedBox(height: 8),
@@ -132,8 +51,9 @@ class SettingsScreen extends ConsumerWidget {
                   title: 'Dark',
                   icon: Icons.dark_mode,
                   isSelected: themeMode == AppThemeMode.dark,
-                  onTap: () =>
-                      ref.read(themeProvider.notifier).setTheme(AppThemeMode.dark),
+                  onTap: () => ref
+                      .read(themeProvider.notifier)
+                      .setTheme(AppThemeMode.dark),
                   theme: theme,
                 ),
                 Divider(
@@ -208,22 +128,6 @@ class SettingsScreen extends ConsumerWidget {
                     style: theme.textTheme.bodyMedium,
                   ),
                 ),
-                if (purchaseState.isAvailable) ...[
-                  Divider(
-                    height: 1,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.restore),
-                    title: const Text('Restore Purchases'),
-                    onTap: () {
-                      ref.read(purchaseProvider.notifier).restorePurchases();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Restoring purchases...')),
-                      );
-                    },
-                  ),
-                ],
                 Divider(
                   height: 1,
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.1),

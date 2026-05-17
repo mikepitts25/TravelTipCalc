@@ -4,11 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config/constants.dart';
 import '../../config/currencies.dart';
 import '../../data/models/tipping_rule.dart';
-import '../../data/models/transaction.dart';
 import '../../data/repositories/tipping_repository.dart';
 import '../../providers/exchange_rate_provider.dart';
 import '../../providers/group_calculator_provider.dart';
-import '../../providers/history_provider.dart';
 import '../../providers/location_provider.dart';
 import '../../providers/preferences_provider.dart';
 import '../../providers/tip_calculator_provider.dart';
@@ -133,51 +131,6 @@ class CalculatorScreenState extends ConsumerState<CalculatorScreen> {
     _loadCountry(countryId);
   }
 
-  void _saveToHistory(BuildContext context) {
-    final isPro = ref.read(proStatusProvider);
-    if (!isPro) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Trip history is planned for a future update'),
-          duration: Duration(seconds: 3),
-        ),
-      );
-      return;
-    }
-
-    final calcState = ref.read(tipCalculatorProvider);
-    if (calcState.billAmount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter a bill amount first')),
-      );
-      return;
-    }
-
-    final tx = TripTransaction(
-      date: DateTime.now(),
-      countryId: calcState.countryId,
-      countryName: _countryName,
-      countryFlag: _countryFlag,
-      serviceType: calcState.serviceType,
-      billAmount: calcState.billAmount,
-      tipPercent: calcState.result.tipPercent,
-      tipAmount: calcState.result.tipAmount,
-      totalAmount: calcState.result.totalAmount,
-      splitCount: calcState.splitCount,
-      currencyCode: _currencyCode,
-      currencySymbol: calcState.currencySymbol,
-    );
-
-    ref.read(historyProvider.notifier).save(tx);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Saved to trip history'),
-        action: SnackBarAction(label: 'OK', onPressed: () {}),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final calcState = ref.watch(tipCalculatorProvider);
@@ -185,12 +138,11 @@ class CalculatorScreenState extends ConsumerState<CalculatorScreen> {
     final exchangeRate = ref.watch(exchangeRateProvider);
     final homeCurrency = ref.watch(homeCurrencyProvider);
     final theme = Theme.of(context);
-    final isPro = ref.watch(proStatusProvider);
 
     return SafeArea(
       child: Column(
         children: [
-          // Header: country badge + mode toggle + save button
+          // Header: country badge + mode toggle
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
             child: Row(
@@ -207,17 +159,6 @@ class CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                 _ModeToggle(
                   isGroupMode: _isGroupMode,
                   onToggle: (v) => setState(() => _isGroupMode = v),
-                ),
-                const SizedBox(width: 4),
-                IconButton(
-                  icon: Icon(
-                    Icons.bookmark_add_outlined,
-                    color: isPro
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurface.withValues(alpha: 0.4),
-                  ),
-                  tooltip: isPro ? 'Save trip' : 'Trip history coming soon',
-                  onPressed: () => _saveToHistory(context),
                 ),
               ],
             ),
@@ -258,10 +199,10 @@ class CalculatorScreenState extends ConsumerState<CalculatorScreen> {
                       calcState: calcState,
                       calcNotifier: calcNotifier,
                       theme: theme,
-                      exchangeRate: exchangeRate.hasRate &&
-                              !exchangeRate.isSameCurrency
-                          ? exchangeRate.rate
-                          : null,
+                      exchangeRate:
+                          exchangeRate.hasRate && !exchangeRate.isSameCurrency
+                              ? exchangeRate.rate
+                              : null,
                       homeCurrencySymbol: getCurrencySymbol(homeCurrency),
                       homeCurrencyCode: homeCurrency,
                       localCurrencyCode: _currencyCode,

@@ -22,8 +22,7 @@ enum AppThemeMode { light, dark, system }
 class ThemeNotifier extends StateNotifier<AppThemeMode> {
   final PreferencesRepository? _prefs;
 
-  ThemeNotifier(this._prefs)
-      : super(_themeFromString(_prefs?.theme ?? 'dark'));
+  ThemeNotifier(this._prefs) : super(_themeFromString(_prefs?.theme ?? 'dark'));
 
   static AppThemeMode _themeFromString(String value) {
     switch (value) {
@@ -46,25 +45,6 @@ final themeProvider = StateNotifierProvider<ThemeNotifier, AppThemeMode>(
   (ref) {
     final prefs = ref.watch(preferencesRepositoryProvider);
     return ThemeNotifier(prefs);
-  },
-);
-
-/// Pro status provider.
-class ProStatusNotifier extends StateNotifier<bool> {
-  final PreferencesRepository? _prefs;
-
-  ProStatusNotifier(this._prefs) : super(_prefs?.isPro ?? false);
-
-  void setPro(bool value) {
-    state = value;
-    _prefs?.setIsPro(value);
-  }
-}
-
-final proStatusProvider = StateNotifierProvider<ProStatusNotifier, bool>(
-  (ref) {
-    final prefs = ref.watch(preferencesRepositoryProvider);
-    return ProStatusNotifier(prefs);
   },
 );
 

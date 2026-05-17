@@ -7,8 +7,6 @@ import 'providers/preferences_provider.dart';
 import 'screens/calculator/calculator_screen.dart';
 import 'screens/country_detail/country_detail_screen.dart';
 import 'screens/country_picker/country_picker_screen.dart';
-import 'screens/history/history_screen.dart';
-import 'screens/pro/pro_upgrade_screen.dart';
 import 'screens/settings/settings_screen.dart';
 import 'widgets/ad_banner_slot.dart';
 
@@ -81,14 +79,6 @@ class _MainShellState extends State<MainShell> {
     );
   }
 
-  void _openProUpgrade() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => const ProUpgradeScreen(),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -102,8 +92,7 @@ class _MainShellState extends State<MainShell> {
                   key: _calculatorKey,
                   onCountryTap: _openCountryPicker,
                 ),
-                HistoryScreen(onUpgradeTap: _openProUpgrade),
-                SettingsScreen(onUpgradeTap: _openProUpgrade),
+                const SettingsScreen(),
               ],
             ),
           ),
@@ -118,11 +107,6 @@ class _MainShellState extends State<MainShell> {
             icon: Icon(Icons.calculate_outlined),
             activeIcon: Icon(Icons.calculate),
             label: 'Calculator',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.history_outlined),
-            activeIcon: Icon(Icons.history),
-            label: 'History',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings_outlined),

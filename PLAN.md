@@ -2,7 +2,7 @@
 
 ## Context
 
-Build a multi-platform travel tip calculator that suggests tip amounts based on the user's location and local tipping customs. The app differentiates from competitors (Ultimate Tip Calculator, Tip N Split, Gratuity, Tip Check) by being **offline-first**, having **non-intrusive ads**, **remembering user preferences per country**, and offering a **modern/fast UI**. Monetization through AdMob banner ads (free tier) and a one-time $4.99 Pro upgrade (ad-free + trip history export).
+Build a multi-platform travel tip calculator that suggests tip amounts based on the user's location and local tipping customs. The app differentiates from competitors (Ultimate Tip Calculator, Tip N Split, Gratuity, Tip Check) by being **offline-first**, having **non-intrusive ads**, **remembering user preferences per country**, and offering a **modern/fast UI**. Current release monetization is AdMob banner ads only; paid upgrades and trip history are deferred.
 
 ---
 
@@ -12,9 +12,8 @@ Build a multi-platform travel tip calculator that suggests tip amounts based on 
 |-------|--------|-----|
 | Framework | **Flutter 3.x (Dart)** | Single codebase for iOS/Android/Web, ~250ms cold start, native rendering |
 | State Mgmt | **Riverpod** | Modern, testable, better than Provider for medium apps |
-| Local DB | **SQLite (sqflite)** | Bundled tip data + user prefs + transaction history, zero network needed |
+| Local DB | **SQLite (sqflite)** | Bundled tip data + user prefs, zero network needed |
 | Ads | **Google AdMob** | Banner ads only (bottom of screen), never during input |
-| Purchases | **in_app_purchase** | One-time $4.99 Pro unlock |
 | Location | **geolocator + geocoding** | Detect country/city from GPS |
 | i18n | **intl** | Currency formatting, number localization |
 
@@ -34,21 +33,20 @@ Build a multi-platform travel tip calculator that suggests tip amounts based on 
 - [x] Dark mode + light mode (system default + manual toggle)
 - [x] Remember last tip % per country/service combo
 - [x] AdMob banner ads (bottom, non-intrusive)
-- [x] Pro IAP ($4.99 one-time, removes ads)
 - [x] Settings screen (default tip %, preferred currency, theme)
 
 ### v1.1 - Post-launch (2-3 weeks after)
-- [ ] Transaction history (save past tips with date/location/amount)
-- [ ] Trip history export (CSV/PDF) - Pro feature
-- [ ] Spending analytics (charts by country/category) - Pro feature
+- [ ] Evaluate whether transaction history should return
+- [ ] Evaluate paid upgrade scope
+- [ ] Spending analytics (charts by country/category)
 - [ ] Offline currency conversion (bundled rates, optional online refresh)
 - [ ] Home screen widget (quick tip from last-used settings)
 - [ ] Flashlight toggle (for reading bills in dark restaurants)
 
 ### v2.0 - Growth phase
-- [ ] Receipt OCR scanning (camera -> auto-fill bill amount) - Pro feature
+- [ ] Receipt OCR scanning (camera -> auto-fill bill amount)
 - [ ] Web version (Flutter web)
-- [ ] Travel phrase packs (basic phrases in local language) - IAP
+- [ ] Travel phrase packs (basic phrases in local language)
 - [ ] Tip of the Day widget
 - [ ] Cloud sync (optional, for multi-device users)
 
@@ -76,18 +74,15 @@ travel_tip_calc/
 │   │   ├── models/
 │   │   │   ├── country.dart            # Country model (name, code, region, currency)
 │   │   │   ├── tipping_rule.dart       # TippingRule model (country, service, min%, max%, note)
-│   │   │   ├── transaction.dart        # Transaction model (for history)
 │   │   │   └── user_preferences.dart   # UserPreferences model
 │   │   └── repositories/
 │   │       ├── tipping_repository.dart # Query tip rules by country/service
-│   │       ├── transaction_repository.dart
 │   │       └── preferences_repository.dart
 │   │
 │   ├── providers/
 │   │   ├── tip_calculator_provider.dart  # Core calculation logic + state
 │   │   ├── location_provider.dart        # GPS location -> country resolution
 │   │   ├── preferences_provider.dart     # User settings state
-│   │   ├── purchase_provider.dart        # IAP state (free vs pro)
 │   │   └── ad_provider.dart              # Ad loading/display state
 │   │
 │   ├── screens/
@@ -105,16 +100,11 @@ travel_tip_calc/
 │   │   │       └── country_tile.dart
 │   │   ├── country_detail/
 │   │   │   └── country_detail_screen.dart # Tipping guide + etiquette for a country
-│   │   ├── history/
-│   │   │   └── history_screen.dart        # Transaction list (v1.1)
 │   │   ├── settings/
-│   │   │   └── settings_screen.dart       # Preferences, theme, pro upgrade
-│   │   └── pro/
-│   │       └── pro_upgrade_screen.dart    # Pro purchase pitch
+│   │   │   └── settings_screen.dart       # Preferences and theme
 │   │
 │   ├── services/
 │   │   ├── location_service.dart   # Geolocator wrapper
-│   │   ├── purchase_service.dart   # IAP wrapper (StoreKit/Play Billing)
 │   │   └── ad_service.dart         # AdMob lifecycle management
 │   │
 │   └── utils/
@@ -190,7 +180,7 @@ travel_tip_calc/
 | key | TEXT (PK) |
 | value | TEXT |
 
-Keys: `theme`, `default_tip_percent`, `last_country`, `is_pro`, `last_tip_{countryId}_{serviceType}`
+Keys: `theme`, `default_tip_percent`, `last_country`, `home_currency`, `last_tip_{countryId}_{serviceType}`
 
 ---
 
@@ -207,15 +197,13 @@ Calculator Screen (home)  ←──── Main tab
     ├── Bill Amount Input (numpad)
     ├── Tip Result Card (animated)
     ├── Split Control
-    └── [Banner Ad - bottom, free tier only]
+    └── [Banner Ad - bottom]
 
-Bottom Navigation (3 tabs):
+Bottom Navigation (2 tabs):
     ├── Calculator (home)
-    ├── Explore (country browser + tipping guide)
     └── Settings
          ├── Theme toggle
-         ├── Default tip %
-         ├── Pro upgrade button
+         ├── Home currency
          └── About / Rate app
 ```
 
@@ -223,23 +211,17 @@ Bottom Navigation (3 tabs):
 
 ## Monetization Integration Points
 
-### Free Tier
+### Current Ads-Only Tier
 - **Banner ad**: Persistent bottom banner on Calculator screen (below results, never overlapping input)
-- **Banner ad**: Bottom of Country Picker screen
+- **No banner ad** on Country Picker for the initial ads-first release
 - **No ads** on: Settings, Country Detail (keep educational content clean)
 - **No interstitials ever** (key differentiator - competitors get destroyed in reviews for this)
 
-### Pro Tier ($4.99 one-time)
-- All ads removed
-- Transaction history (save/view past tips)
-- Export history as CSV or PDF
-- Badge/icon indicating Pro status
-- Implemented via `in_app_purchase` package (StoreKit on iOS, Play Billing on Android)
-
 ### Future Monetization (v2+)
+- Paid upgrade scope can be revisited after the ads-first release
 - Travel phrase packs: $0.99 each (Japanese, Spanish, French, etc.)
 - Premium themes: $1.99 theme pack
-- Receipt OCR: Could be Pro-only or separate $1.99 IAP
+- Receipt OCR: Could be a future paid add-on
 
 ---
 
@@ -255,7 +237,6 @@ dependencies:
   geolocator: ^12.0.0             # GPS location
   geocoding: ^3.0.0               # Reverse geocode -> country
   google_mobile_ads: ^5.0.0       # AdMob banner ads
-  in_app_purchase: ^3.2.0         # Pro IAP
   intl: ^0.19.0                   # Currency/number formatting
   shared_preferences: ^2.2.0      # Simple key-value prefs
   go_router: ^14.0.0              # Declarative routing
@@ -323,7 +304,6 @@ Each country entry includes:
 
 ### Integration Tests
 - Full flow: Launch -> auto-detect location -> enter bill -> see tip -> change country -> see updated tip
-- Pro upgrade flow: Tap upgrade -> mock purchase -> verify ads disappear
 
 ### Manual Testing Checklist
 - Test on iOS simulator + Android emulator
@@ -331,7 +311,6 @@ Each country entry includes:
 - Test offline mode (airplane mode)
 - Test dark/light theme switching
 - Verify ad placement doesn't overlap content
-- Test IAP in sandbox environment
 
 ---
 
@@ -340,13 +319,11 @@ Each country entry includes:
 ### iOS (App Store)
 - Privacy nutrition labels: Location (when in use), no tracking
 - App Review: Ensure AdMob complies with Apple guidelines
-- IAP: Must use Apple's in-app purchase (no external payment links)
 - Screenshots: iPhone 6.7", iPhone 6.5", iPad 12.9"
 
 ### Android (Google Play)
 - Target API level 34+
 - Data safety section: Location data collected for functionality
-- Play Billing Library v6+ required
 - Screenshots: Phone + 7" tablet + 10" tablet
 
 ### Both
@@ -366,8 +343,7 @@ Each country entry includes:
 5. **Country picker** - Search/browse countries, detail screen with etiquette
 6. **Location detection** - GPS -> country auto-detection
 7. **Preferences** - Remember tip % per country, theme, settings screen
-8. **AdMob integration** - Banner ads on calculator + country picker
-9. **Pro IAP** - Purchase flow, ad removal logic
-10. **Polish** - Animations, haptics, dark mode refinement, app icons
-11. **Testing** - Unit + widget + integration tests
-12. **App store prep** - Screenshots, descriptions, privacy policies, submission
+8. **AdMob integration** - Banner ads on calculator
+9. **Polish** - Animations, haptics, dark mode refinement, app icons
+10. **Testing** - Unit + widget + integration tests
+11. **App store prep** - Screenshots, descriptions, privacy policies, submission

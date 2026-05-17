@@ -27,8 +27,7 @@
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>GADApplicationIdentifier</key>
-	<!-- Google sample app ID for test ads. Replace with the real iOS AdMob app ID before App Store release. -->
-	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<string>ca-app-pub-5950430918685177~5608485281</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

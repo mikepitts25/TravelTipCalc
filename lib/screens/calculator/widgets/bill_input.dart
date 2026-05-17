@@ -82,7 +82,7 @@ class _BillInputState extends State<BillInput> {
       children: [
         // Amount display
         Container(
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
           child: Column(
             children: [
               Row(
@@ -99,9 +99,8 @@ class _BillInputState extends State<BillInput> {
                   Text(
                     _displayAmount,
                     style: theme.textTheme.headlineLarge?.copyWith(
-                      fontSize: 48,
+                      fontSize: 42,
                       fontWeight: FontWeight.w700,
-                      letterSpacing: -1,
                     ),
                   ),
                 ],
@@ -118,15 +117,15 @@ class _BillInputState extends State<BillInput> {
         ),
         // Numpad
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
+          padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             children: [
               _buildRow(['1', '2', '3'], theme, isDark),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               _buildRow(['4', '5', '6'], theme, isDark),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               _buildRow(['7', '8', '9'], theme, isDark),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               _buildRow(['.', '0', '⌫'], theme, isDark),
             ],
           ),
@@ -178,7 +177,7 @@ class _NumpadKey extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: Container(
-          height: 56,
+          height: 48,
           alignment: Alignment.center,
           child: label == '⌫'
               ? Icon(

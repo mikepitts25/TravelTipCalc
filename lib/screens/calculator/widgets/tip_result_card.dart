@@ -51,14 +51,19 @@ class TipResultCard extends ConsumerWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             if (_showConversion)
               Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.only(bottom: 8),
                 child: Container(
-                  padding: const EdgeInsets.only(left: 12, right: 4, top: 4, bottom: 4),
+                  padding: const EdgeInsets.only(
+                    left: 12,
+                    right: 4,
+                    top: 4,
+                    bottom: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
@@ -116,11 +121,11 @@ class TipResultCard extends ConsumerWidget {
               theme: theme,
               isHighlighted: true,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Divider(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             _ResultRow(
               label: 'Total',
               value: CurrencyFormatter.formatCompact(
@@ -131,11 +136,11 @@ class TipResultCard extends ConsumerWidget {
               theme: theme,
             ),
             if (showSplit) ...[
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
               Divider(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 8),
               _ResultRow(
                 label: 'Per Person',
                 value: CurrencyFormatter.formatCompact(
@@ -209,7 +214,7 @@ class _ResultRow extends StatelessWidget {
             Text(
               value,
               style: isHighlighted
-                  ? theme.textTheme.headlineMedium?.copyWith(
+                  ? theme.textTheme.headlineSmall?.copyWith(
                       color: theme.colorScheme.primary,
                       fontWeight: FontWeight.w700,
                     )

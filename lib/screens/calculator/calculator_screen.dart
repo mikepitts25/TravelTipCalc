@@ -144,7 +144,7 @@ class CalculatorScreenState extends ConsumerState<CalculatorScreen> {
         children: [
           // Header: country badge + mode toggle
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: Row(
               children: [
                 Expanded(
@@ -165,7 +165,7 @@ class CalculatorScreenState extends ConsumerState<CalculatorScreen> {
           ),
 
           Padding(
-            padding: const EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.only(top: 6),
             child: ServiceSelector(
               selected: calcState.serviceType,
               onSelected: _onServiceChanged,
@@ -174,39 +174,43 @@ class CalculatorScreenState extends ConsumerState<CalculatorScreen> {
 
           if (_currentRule != null)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 2),
               child: Text(
                 _currentRule!.note,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  fontSize: 12,
+                  fontSize: 11,
                   fontStyle: FontStyle.italic,
                 ),
                 textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
 
           Expanded(
-            child: SingleChildScrollView(
-              child: _isGroupMode
-                  ? const Column(
-                      children: [
-                        SizedBox(height: 8),
-                        GroupModePanel(),
-                        SizedBox(height: 80),
-                      ],
-                    )
-                  : _SoloContent(
-                      calcState: calcState,
-                      calcNotifier: calcNotifier,
-                      theme: theme,
-                      exchangeRate:
-                          exchangeRate.hasRate && !exchangeRate.isSameCurrency
-                              ? exchangeRate.rate
-                              : null,
-                      homeCurrencySymbol: getCurrencySymbol(homeCurrency),
-                      homeCurrencyCode: homeCurrency,
-                      localCurrencyCode: _currencyCode,
-                    ),
+            child: Scrollbar(
+              child: SingleChildScrollView(
+                child: _isGroupMode
+                    ? const Column(
+                        children: [
+                          SizedBox(height: 8),
+                          GroupModePanel(),
+                          SizedBox(height: 24),
+                        ],
+                      )
+                    : _SoloContent(
+                        calcState: calcState,
+                        calcNotifier: calcNotifier,
+                        theme: theme,
+                        exchangeRate:
+                            exchangeRate.hasRate && !exchangeRate.isSameCurrency
+                                ? exchangeRate.rate
+                                : null,
+                        homeCurrencySymbol: getCurrencySymbol(homeCurrency),
+                        homeCurrencyCode: homeCurrency,
+                        localCurrencyCode: _currencyCode,
+                      ),
+              ),
             ),
           ),
         ],
@@ -296,9 +300,9 @@ class _SoloContent extends ConsumerWidget {
           exchangeRate: exchangeRate,
           homeCurrencySymbol: homeCurrencySymbol,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: _TipPresetRow(
             presets: AppConstants.quickTipPresets,
             selected: calcState.tipPercent,
@@ -313,7 +317,7 @@ class _SoloContent extends ConsumerWidget {
             theme: theme,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: _RoundingToggle(
@@ -322,7 +326,7 @@ class _SoloContent extends ConsumerWidget {
             theme: theme,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: TipResultCard(
@@ -339,7 +343,7 @@ class _SoloContent extends ConsumerWidget {
             localCurrencyCode: localCurrencyCode,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: SplitControl(
@@ -347,7 +351,7 @@ class _SoloContent extends ConsumerWidget {
             onChanged: calcNotifier.setSplitCount,
           ),
         ),
-        const SizedBox(height: 80),
+        const SizedBox(height: 24),
       ],
     );
   }

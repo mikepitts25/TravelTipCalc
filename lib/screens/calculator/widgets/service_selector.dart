@@ -30,7 +30,7 @@ class ServiceSelector extends StatelessWidget {
     final theme = Theme.of(context);
 
     return SizedBox(
-      height: 42,
+      height: 38,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -47,7 +47,7 @@ class ServiceSelector extends StatelessWidget {
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
               decoration: BoxDecoration(
                 color: isSelected
                     ? theme.colorScheme.primary.withValues(alpha: 0.2)
@@ -62,12 +62,12 @@ class ServiceSelector extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(service.icon, style: const TextStyle(fontSize: 16)),
+                  Text(service.icon, style: const TextStyle(fontSize: 15)),
                   const SizedBox(width: 6),
                   Text(
                     service.displayName,
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 12,
                       fontWeight:
                           isSelected ? FontWeight.w600 : FontWeight.w400,
                       color: isSelected

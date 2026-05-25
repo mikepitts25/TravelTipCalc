@@ -81,6 +81,7 @@ void main() {
           isIOS: true,
           isRelease: true,
           useTestAds: true,
+          hideAdsForScreenshots: false,
           productionIOSAdUnitId: 'ios-unit',
           productionAndroidAdUnitId: 'android-unit',
         ),
@@ -92,10 +93,37 @@ void main() {
           isIOS: false,
           isRelease: true,
           useTestAds: true,
+          hideAdsForScreenshots: false,
           productionIOSAdUnitId: 'ios-unit',
           productionAndroidAdUnitId: 'android-unit',
         ),
         'ca-app-pub-3940256099942544/6300978111',
+      );
+    });
+
+    test('can hide banner ads for screenshot builds', () {
+      expect(
+        AdConfig.resolveBannerAdUnitId(
+          isIOS: true,
+          isRelease: false,
+          useTestAds: false,
+          hideAdsForScreenshots: true,
+          productionIOSAdUnitId: 'ios-unit',
+          productionAndroidAdUnitId: 'android-unit',
+        ),
+        '',
+      );
+
+      expect(
+        AdConfig.resolveBannerAdUnitId(
+          isIOS: false,
+          isRelease: true,
+          useTestAds: true,
+          hideAdsForScreenshots: true,
+          productionIOSAdUnitId: 'ios-unit',
+          productionAndroidAdUnitId: 'android-unit',
+        ),
+        '',
       );
     });
   });

@@ -136,44 +136,13 @@ class _GroupModePanelState extends ConsumerState<GroupModePanel> {
 
   Future<void> _showCustomTipDialog(BuildContext context) async {
     final state = ref.read(groupCalculatorProvider);
-    final controller = TextEditingController(
-      text: state.tipPercent > 0 ? _formatPercent(state.tipPercent) : '',
-    );
+    final initialText =
+        state.tipPercent > 0 ? _formatPercent(state.tipPercent) : '';
     final percent = await showDialog<double>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Custom tip'),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            inputFormatters: [
-              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
-            ],
-            decoration: const InputDecoration(
-              labelText: 'Tip percent',
-              suffixText: '%',
-            ),
-            onSubmitted: (value) =>
-                Navigator.of(context).pop(_parsePercent(value)),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () =>
-                  Navigator.of(context).pop(_parsePercent(controller.text)),
-              child: const Text('Apply'),
-            ),
-          ],
-        );
-      },
+      builder: (context) => _CustomTipDialog(initialText: initialText),
     );
 
-    controller.dispose();
     if (percent == null) return;
     ref.read(groupCalculatorProvider.notifier).setTipPercent(percent);
   }
@@ -524,6 +493,68 @@ class _GroupTotalsCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _CustomTipDialog extends StatefulWidget {
+  final String initialText;
+  const _CustomTipDialog({required this.initialText});
+
+  @override
+  State<_CustomTipDialog> createState() => _CustomTipDialogState();
+}
+
+class _CustomTipDialogState extends State<_CustomTipDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialText);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  static double? _parsePercent(String value) {
+    final percent = double.tryParse(value.trim());
+    if (percent == null || percent < 0) return null;
+    return percent;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Custom tip'),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        inputFormatters: [
+          FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+        ],
+        decoration: const InputDecoration(
+          labelText: 'Tip percent',
+          suffixText: '%',
+        ),
+        onSubmitted: (value) =>
+            Navigator.of(context).pop(_parsePercent(value)),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () =>
+              Navigator.of(context).pop(_parsePercent(_controller.text)),
+          child: const Text('Apply'),
+        ),
+      ],
     );
   }
 }

@@ -11,8 +11,14 @@ class AdConfig {
   // --dart-define=ADMOB_ANDROID_BANNER_AD_UNIT_ID=ca-app-pub-.../...
   // Use Google's test banner units in release builds for TestFlight/beta QA:
   // --dart-define=ADMOB_USE_TEST_ADS=true
+  // Hide banner ads for App Store screenshot capture builds:
+  // --dart-define=HIDE_ADS_FOR_SCREENSHOTS=true
   static const bool _useTestAds = bool.fromEnvironment(
     'ADMOB_USE_TEST_ADS',
+    defaultValue: false,
+  );
+  static const bool _hideAdsForScreenshots = bool.fromEnvironment(
+    'HIDE_ADS_FOR_SCREENSHOTS',
     defaultValue: false,
   );
   static const String _productionIOSBannerAdUnitId = String.fromEnvironment(
@@ -34,6 +40,7 @@ class AdConfig {
       isIOS: platform == TargetPlatform.iOS,
       isRelease: kReleaseMode,
       useTestAds: _useTestAds,
+      hideAdsForScreenshots: _hideAdsForScreenshots,
       productionIOSAdUnitId: _productionIOSBannerAdUnitId,
       productionAndroidAdUnitId: _productionAndroidBannerAdUnitId,
     );
@@ -45,9 +52,14 @@ class AdConfig {
     required bool isIOS,
     required bool isRelease,
     required bool useTestAds,
+    bool hideAdsForScreenshots = false,
     required String productionIOSAdUnitId,
     required String productionAndroidAdUnitId,
   }) {
+    if (hideAdsForScreenshots) {
+      return '';
+    }
+
     if (!isRelease || useTestAds) {
       return isIOS ? _testIOSBannerAdUnitId : _testAndroidBannerAdUnitId;
     }

@@ -116,6 +116,13 @@ class TipCalculatorNotifier extends StateNotifier<TipCalculatorState> {
     _recalculate();
   }
 
+  double toggleTipPercent(double percent) {
+    final nextPercent =
+        (state.tipPercent - percent).abs() < 0.001 ? 0.0 : percent;
+    setTipPercent(nextPercent);
+    return nextPercent;
+  }
+
   void setSplitCount(int count) {
     if (count < AppConstants.minSplitCount ||
         count > AppConstants.maxSplitCount) {

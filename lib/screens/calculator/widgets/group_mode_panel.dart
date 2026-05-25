@@ -30,6 +30,7 @@ class _GroupModePanelState extends ConsumerState<GroupModePanel> {
         ? exchangeRateState.rate
         : null;
     final homeSym = getCurrencySymbol(homeCurrency);
+    final customSelected = _isCustomSelected(state.tipPercent);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -45,42 +46,32 @@ class _GroupModePanelState extends ConsumerState<GroupModePanel> {
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
-                    children: AppConstants.quickTipPresets.map((p) {
-                      final isSelected = (p - state.tipPercent).abs() < 0.5;
-                      return Padding(
+                    children: [
+                      Padding(
                         padding: const EdgeInsets.only(right: 8),
-                        child: GestureDetector(
-                          onTap: () => notifier.setTipPercent(p),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 180),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? theme.colorScheme.primary
-                                      .withValues(alpha: 0.2)
-                                  : theme.cardColor,
-                              borderRadius: BorderRadius.circular(10),
-                              border: isSelected
-                                  ? Border.all(
-                                      color: theme.colorScheme.primary)
-                                  : null,
-                            ),
-                            child: Text(
-                              '${p.toInt()}%',
-                              style: TextStyle(
-                                fontWeight: isSelected
-                                    ? FontWeight.w700
-                                    : FontWeight.w500,
-                                color: isSelected
-                                    ? theme.colorScheme.primary
-                                    : null,
-                              ),
-                            ),
-                          ),
+                        child: _tipChip(
+                          label: customSelected
+                              ? '${_formatPercent(state.tipPercent)}%'
+                              : 'Custom',
+                          isSelected: customSelected,
+                          onTap: customSelected
+                              ? () => notifier.setTipPercent(0)
+                              : () => _showCustomTipDialog(context),
+                          theme: theme,
                         ),
-                      );
-                    }).toList(),
+                      ),
+                      ...AppConstants.quickTipPresets.map((p) {
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: _tipChip(
+                            label: '${p.toInt()}%',
+                            isSelected: _matchesPercent(p, state.tipPercent),
+                            onTap: () => notifier.toggleTipPercent(p),
+                            theme: theme,
+                          ),
+                        );
+                      }),
+                    ],
                   ),
                 ),
               ),
@@ -99,8 +90,7 @@ class _GroupModePanelState extends ConsumerState<GroupModePanel> {
             exchangeRate: rate,
             homeCurrencySymbol: homeSym,
             canDelete: state.persons.length > 1,
-            onNameChanged: (name) =>
-                notifier.updatePersonName(person.id, name),
+            onNameChanged: (name) => notifier.updatePersonName(person.id, name),
             onBillChanged: (amount) =>
                 notifier.updatePersonBill(person.id, amount),
             onDelete: () => notifier.removePerson(person.id),
@@ -115,8 +105,7 @@ class _GroupModePanelState extends ConsumerState<GroupModePanel> {
             icon: const Icon(Icons.person_add_outlined, size: 18),
             label: const Text('Add Person'),
             style: TextButton.styleFrom(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             ),
           ),
         ),
@@ -130,16 +119,107 @@ class _GroupModePanelState extends ConsumerState<GroupModePanel> {
             exchangeRate: rate,
             homeCurrencySymbol: homeSym,
             homeCurrencyCode: homeCurrency,
-            localCurrencyCode: state.countryId.isNotEmpty
-                ? state.currencySymbol
-                : null,
+            localCurrencyCode:
+                state.countryId.isNotEmpty ? state.currencySymbol : null,
             isRefreshing: exchangeRateState.isLoading,
-            onRefresh: () =>
-                ref.read(exchangeRateProvider.notifier).refresh(),
+            onRefresh: () => ref.read(exchangeRateProvider.notifier).refresh(),
           ),
         ),
       ],
     );
+  }
+
+  bool _isCustomSelected(double percent) {
+    return percent > 0 &&
+        !AppConstants.quickTipPresets.any((p) => _matchesPercent(p, percent));
+  }
+
+  Future<void> _showCustomTipDialog(BuildContext context) async {
+    final state = ref.read(groupCalculatorProvider);
+    final controller = TextEditingController(
+      text: state.tipPercent > 0 ? _formatPercent(state.tipPercent) : '',
+    );
+    final percent = await showDialog<double>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Custom tip'),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+            ],
+            decoration: const InputDecoration(
+              labelText: 'Tip percent',
+              suffixText: '%',
+            ),
+            onSubmitted: (value) =>
+                Navigator.of(context).pop(_parsePercent(value)),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () =>
+                  Navigator.of(context).pop(_parsePercent(controller.text)),
+              child: const Text('Apply'),
+            ),
+          ],
+        );
+      },
+    );
+
+    controller.dispose();
+    if (percent == null) return;
+    ref.read(groupCalculatorProvider.notifier).setTipPercent(percent);
+  }
+
+  Widget _tipChip({
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+    required ThemeData theme,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? theme.colorScheme.primary.withValues(alpha: 0.2)
+              : theme.cardColor,
+          borderRadius: BorderRadius.circular(10),
+          border:
+              isSelected ? Border.all(color: theme.colorScheme.primary) : null,
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected ? theme.colorScheme.primary : null,
+          ),
+        ),
+      ),
+    );
+  }
+
+  static double? _parsePercent(String value) {
+    final percent = double.tryParse(value.trim());
+    if (percent == null || percent < 0) return null;
+    return percent;
+  }
+
+  static bool _matchesPercent(double a, double b) => (a - b).abs() < 0.001;
+
+  static String _formatPercent(double percent) {
+    return percent == percent.roundToDouble()
+        ? percent.toInt().toString()
+        : percent.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
   }
 }
 
@@ -239,8 +319,8 @@ class _PersonRowState extends State<_PersonRow> {
                       child: Icon(
                         Icons.close,
                         size: 18,
-                        color: theme.colorScheme.onSurface
-                            .withValues(alpha: 0.4),
+                        color:
+                            theme.colorScheme.onSurface.withValues(alpha: 0.4),
                       ),
                     ),
                 ],
@@ -251,16 +331,15 @@ class _PersonRowState extends State<_PersonRow> {
                   Text(
                     widget.currencySymbol,
                     style: theme.textTheme.titleLarge?.copyWith(
-                      color: theme.colorScheme.onSurface
-                          .withValues(alpha: 0.5),
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                     ),
                   ),
                   const SizedBox(width: 4),
                   Expanded(
                     child: TextField(
                       controller: _billController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                          decimal: true),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
                       inputFormatters: [
                         FilteringTextInputFormatter.allow(
                             RegExp(r'^\d+\.?\d{0,2}')),

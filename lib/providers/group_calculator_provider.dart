@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../config/constants.dart';
 import '../utils/tip_calculator.dart';
 
 class GroupPerson {
@@ -36,13 +37,12 @@ class GroupCalculatorState {
 
   const GroupCalculatorState({
     this.persons = const [],
-    this.tipPercent = 18.0,
+    this.tipPercent = AppConstants.defaultTipPercent,
     this.currencySymbol = '\$',
     this.countryId = 'US',
   });
 
-  double get totalBill =>
-      persons.fold(0, (sum, p) => sum + p.billAmount);
+  double get totalBill => persons.fold(0, (sum, p) => sum + p.billAmount);
 
   double get totalTip =>
       persons.fold(0, (sum, p) => sum + p.tipAmount(tipPercent));
@@ -109,6 +109,13 @@ class GroupCalculatorNotifier extends StateNotifier<GroupCalculatorState> {
 
   void setTipPercent(double percent) {
     state = state.copyWith(tipPercent: percent);
+  }
+
+  double toggleTipPercent(double percent) {
+    final nextPercent =
+        (state.tipPercent - percent).abs() < 0.001 ? 0.0 : percent;
+    setTipPercent(nextPercent);
+    return nextPercent;
   }
 
   void setCountryAndCurrency(String countryId, String currencySymbol) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/constants.dart';
@@ -317,11 +318,27 @@ class _SoloContent extends ConsumerWidget {
             presets: AppConstants.quickTipPresets,
             selected: calcState.tipPercent,
             onSelected: (percent) {
+              final selectedPercent = calcNotifier.toggleTipPercent(percent);
+              ref.read(preferencesRepositoryProvider)?.setLastTip(
+                    calcState.countryId,
+                    calcState.serviceType.dbValue,
+                    selectedPercent,
+                  );
+            },
+            onCustomSelected: (percent) {
               calcNotifier.setTipPercent(percent);
               ref.read(preferencesRepositoryProvider)?.setLastTip(
                     calcState.countryId,
                     calcState.serviceType.dbValue,
                     percent,
+                  );
+            },
+            onClear: () {
+              calcNotifier.setTipPercent(0);
+              ref.read(preferencesRepositoryProvider)?.setLastTip(
+                    calcState.countryId,
+                    calcState.serviceType.dbValue,
+                    0,
                   );
             },
             theme: theme,
@@ -371,48 +388,175 @@ class _TipPresetRow extends StatelessWidget {
   final List<double> presets;
   final double selected;
   final ValueChanged<double> onSelected;
+  final ValueChanged<double> onCustomSelected;
+  final VoidCallback onClear;
   final ThemeData theme;
 
   const _TipPresetRow({
     required this.presets,
     required this.selected,
     required this.onSelected,
+    required this.onCustomSelected,
+    required this.onClear,
     required this.theme,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: presets.map((percent) {
-        final isSelected = (percent - selected).abs() < 0.5;
-        return GestureDetector(
-          onTap: () => onSelected(percent),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? theme.colorScheme.primary.withValues(alpha: 0.2)
-                  : theme.cardColor,
-              borderRadius: BorderRadius.circular(12),
-              border: isSelected
-                  ? Border.all(color: theme.colorScheme.primary)
-                  : null,
-            ),
-            child: Text(
-              '${percent.toInt()}%',
-              style: TextStyle(
-                fontSize: 15,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected
-                    ? theme.colorScheme.primary
-                    : theme.textTheme.bodyMedium?.color,
-              ),
-            ),
+    final customSelected =
+        selected > 0 && !presets.any((p) => _matchesPercent(p, selected));
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _TipPresetChip(
+            label: customSelected ? '${_formatPercent(selected)}%' : 'Custom',
+            isSelected: customSelected,
+            onTap:
+                customSelected ? onClear : () => _showCustomTipDialog(context),
+            theme: theme,
           ),
-        );
-      }).toList(),
+          const SizedBox(width: 8),
+          ...presets.map((percent) {
+            return Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: _TipPresetChip(
+                label: '${percent.toInt()}%',
+                isSelected: _matchesPercent(percent, selected),
+                onTap: () => onSelected(percent),
+                theme: theme,
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showCustomTipDialog(BuildContext context) async {
+    final percent = await showDialog<double>(
+      context: context,
+      builder: (context) => _CustomTipDialog(
+        initialValue: selected > 0 ? _formatPercent(selected) : '',
+      ),
+    );
+
+    if (percent == null) return;
+    onCustomSelected(percent);
+  }
+
+  static double? _parsePercent(String value) {
+    final percent = double.tryParse(value.trim());
+    if (percent == null || percent < 0) return null;
+    return percent;
+  }
+
+  static bool _matchesPercent(double a, double b) => (a - b).abs() < 0.001;
+
+  static String _formatPercent(double percent) {
+    return percent == percent.roundToDouble()
+        ? percent.toInt().toString()
+        : percent.toStringAsFixed(2).replaceFirst(RegExp(r'\.?0+$'), '');
+  }
+}
+
+class _CustomTipDialog extends StatefulWidget {
+  final String initialValue;
+
+  const _CustomTipDialog({required this.initialValue});
+
+  @override
+  State<_CustomTipDialog> createState() => _CustomTipDialogState();
+}
+
+class _CustomTipDialogState extends State<_CustomTipDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialValue);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Custom tip'),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        inputFormatters: [
+          FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+        ],
+        decoration: const InputDecoration(
+          labelText: 'Tip percent',
+          suffixText: '%',
+        ),
+        onSubmitted: (value) =>
+            Navigator.of(context).pop(_TipPresetRow._parsePercent(value)),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context)
+              .pop(_TipPresetRow._parsePercent(_controller.text)),
+          child: const Text('Apply'),
+        ),
+      ],
+    );
+  }
+}
+
+class _TipPresetChip extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final ThemeData theme;
+
+  const _TipPresetChip({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+    required this.theme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? theme.colorScheme.primary.withValues(alpha: 0.2)
+              : theme.cardColor,
+          borderRadius: BorderRadius.circular(12),
+          border:
+              isSelected ? Border.all(color: theme.colorScheme.primary) : null,
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected
+                ? theme.colorScheme.primary
+                : theme.textTheme.bodyMedium?.color,
+          ),
+        ),
+      ),
     );
   }
 }

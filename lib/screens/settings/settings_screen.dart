@@ -1,12 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../config/constants.dart';
 import '../../config/currencies.dart';
 import '../../providers/preferences_provider.dart';
 
+typedef ReviewUrlLauncher = Future<bool> Function(Uri url);
+
 class SettingsScreen extends ConsumerWidget {
-  const SettingsScreen({super.key});
+  const SettingsScreen({
+    super.key,
+    this.launchReviewUrl = _launchReviewUrl,
+  });
+
+  final ReviewUrlLauncher launchReviewUrl;
+
+  static Future<bool> _launchReviewUrl(Uri url) {
+    return launchUrl(url, mode: LaunchMode.externalApplication);
+  }
+
+  Future<void> _openAppStoreReview(BuildContext context) async {
+    final launched = await launchReviewUrl(
+      Uri.parse(AppConstants.appStoreReviewUrl),
+    );
+    if (launched || !context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Could not open the App Store review page.'),
+      ),
+    );
+  }
 
   void _showCurrencyPicker(
     BuildContext context,
@@ -135,9 +160,7 @@ class SettingsScreen extends ConsumerWidget {
                 ListTile(
                   leading: const Icon(Icons.star_outline),
                   title: const Text('Rate This App'),
-                  onTap: () {
-                    // TODO: Implement app store rating link
-                  },
+                  onTap: () => _openAppStoreReview(context),
                 ),
               ],
             ),

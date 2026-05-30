@@ -1,6 +1,8 @@
 class AppConstants {
   static const String appName = 'TravelTipCalc';
   static const String appVersion = '1.0.0';
+  static const String appStoreReviewUrl =
+      'https://apps.apple.com/app/id6767832527?action=write-review';
 
   // Default values
   static const double defaultTipPercent = 15.0;

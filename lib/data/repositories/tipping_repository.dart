@@ -57,7 +57,8 @@ class TippingRepository {
     return maps.map(TippingRule.fromMap).toList();
   }
 
-  Future<TippingRule?> getRule(String countryId, ServiceType serviceType) async {
+  Future<TippingRule?> getRule(
+      String countryId, ServiceType serviceType) async {
     final db = await _db.database;
     final maps = await db.query(
       'tipping_rules',

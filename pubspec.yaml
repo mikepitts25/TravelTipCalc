@@ -1,7 +1,7 @@
 name: travel_tip_calc
 description: A modern travel tip calculator for 200+ countries.
 publish_to: 'none'
-version: 1.0.0+2
+version: 1.0.1+3
 
 environment:
   sdk: '>=3.2.0 <4.0.0'

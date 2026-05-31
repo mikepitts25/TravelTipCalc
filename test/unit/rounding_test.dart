@@ -367,7 +367,8 @@ void main() {
       }
     });
 
-    test('floating point precision: 0.1 + 0.2 scenario in roundTotalNearest', () {
+    test('floating point precision: 0.1 + 0.2 scenario in roundTotalNearest',
+        () {
       // bill 10.10 + tip 2.02 = 12.12, rounds to 12
       // adjusted = 12 - 10.10 = 1.90
       final result = Rounding.applyRounding(

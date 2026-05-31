@@ -74,7 +74,6 @@ final locationServiceProvider = Provider<LocationService>(
   (ref) => LocationService(),
 );
 
-final locationProvider =
-    StateNotifierProvider<LocationNotifier, LocationState>(
+final locationProvider = StateNotifierProvider<LocationNotifier, LocationState>(
   (ref) => LocationNotifier(ref.read(locationServiceProvider)),
 );

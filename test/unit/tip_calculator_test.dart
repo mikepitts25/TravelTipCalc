@@ -44,7 +44,8 @@ void main() {
     });
 
     test('handles very large bill amount', () {
-      expect(TipCalculator.calculateTip(999999.99, 20), closeTo(199999.998, 0.001));
+      expect(TipCalculator.calculateTip(999999.99, 20),
+          closeTo(199999.998, 0.001));
     });
 
     test('handles very small tip percent', () {
@@ -162,7 +163,8 @@ void main() {
     });
 
     test('handles uneven split', () {
-      expect(TipCalculator.calculateTipPerPerson(10, 3), closeTo(3.3333, 0.001));
+      expect(
+          TipCalculator.calculateTipPerPerson(10, 3), closeTo(3.3333, 0.001));
     });
   });
 

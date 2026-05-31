@@ -177,12 +177,6 @@ class _GroupModePanelState extends ConsumerState<GroupModePanel> {
     );
   }
 
-  static double? _parsePercent(String value) {
-    final percent = double.tryParse(value.trim());
-    if (percent == null || percent < 0) return null;
-    return percent;
-  }
-
   static bool _matchesPercent(double a, double b) => (a - b).abs() < 0.001;
 
   static String _formatPercent(double percent) {
@@ -541,8 +535,7 @@ class _CustomTipDialogState extends State<_CustomTipDialog> {
           labelText: 'Tip percent',
           suffixText: '%',
         ),
-        onSubmitted: (value) =>
-            Navigator.of(context).pop(_parsePercent(value)),
+        onSubmitted: (value) => Navigator.of(context).pop(_parsePercent(value)),
       ),
       actions: [
         TextButton(

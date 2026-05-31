@@ -26,6 +26,8 @@ class _CountryPickerScreenState extends ConsumerState<CountryPickerScreen> {
   List<Country> _allCountries = [];
   List<Country> _filteredCountries = [];
   Map<String, List<Country>> _groupedByRegion = {};
+  final Set<String> _expandedRegionGroups = {};
+  final Set<String> _expandedSubregions = {};
   bool _isSearching = false;
 
   @override
@@ -48,6 +50,64 @@ class _CountryPickerScreenState extends ConsumerState<CountryPickerScreen> {
     for (final country in countries) {
       _groupedByRegion.putIfAbsent(country.region, () => []).add(country);
     }
+  }
+
+  List<_RegionGroup> _regionGroups() {
+    const groups = [
+      _RegionGroup(
+        name: 'Europe',
+        subregions: [
+          'Western Europe',
+          'Eastern Europe',
+          'Northern Europe',
+          'Southern Europe',
+        ],
+      ),
+      _RegionGroup(
+        name: 'North America',
+        subregions: [
+          'North America',
+          'Central America & Caribbean',
+        ],
+      ),
+      _RegionGroup(
+        name: 'South America',
+        subregions: ['South America'],
+      ),
+      _RegionGroup(
+        name: 'Asia',
+        subregions: [
+          'East Asia',
+          'Southeast Asia',
+          'South Asia',
+          'Russia & Central Asia',
+        ],
+      ),
+      _RegionGroup(
+        name: 'Middle East & North Africa',
+        subregions: [
+          'Middle East',
+          'North Africa',
+        ],
+      ),
+      _RegionGroup(
+        name: 'Africa',
+        subregions: [
+          'East Africa',
+          'West Africa',
+          'Central Africa',
+          'Southern Africa',
+        ],
+      ),
+      _RegionGroup(
+        name: 'Oceania',
+        subregions: ['Oceania'],
+      ),
+    ];
+
+    return groups
+        .where((group) => group.subregions.any(_groupedByRegion.containsKey))
+        .toList();
   }
 
   void _onSearchChanged(String query) {
@@ -146,36 +206,120 @@ class _CountryPickerScreenState extends ConsumerState<CountryPickerScreen> {
   }
 
   Widget _buildGroupedList() {
-    final regions = _groupedByRegion.keys.toList()..sort();
+    final groups = _regionGroups();
 
     return ListView.builder(
-      itemCount: regions.length,
+      padding: const EdgeInsets.only(top: 8, bottom: 16),
+      itemCount: groups.length,
       itemBuilder: (context, index) {
-        final region = regions[index];
-        final countries = _groupedByRegion[region]!;
+        final group = groups[index];
+        final countryCount = group.countryCount(_groupedByRegion);
+        final isExpanded = _expandedRegionGroups.contains(group.name);
+        final theme = Theme.of(context);
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Text(
-                region,
-                style: Theme.of(context).textTheme.labelLarge,
-              ),
+        return Theme(
+          data: theme.copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            key: PageStorageKey<String>('country-region-group-${group.name}'),
+            initiallyExpanded: isExpanded,
+            onExpansionChanged: (expanded) {
+              setState(() {
+                if (expanded) {
+                  _expandedRegionGroups.add(group.name);
+                } else {
+                  _expandedRegionGroups.remove(group.name);
+                }
+              });
+            },
+            tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+            childrenPadding: const EdgeInsets.only(bottom: 8),
+            iconColor: theme.colorScheme.primary,
+            collapsedIconColor: theme.textTheme.bodyMedium?.color,
+            title: Text(
+              group.name,
+              style: theme.textTheme.labelLarge,
             ),
-            ...countries.map(
-              (country) => CountryTile(
-                country: country,
-                onTap: () => widget.onCountrySelected(country),
-                onInfoTap: widget.onCountryInfoTap != null
-                    ? () => widget.onCountryInfoTap!(country)
-                    : null,
-              ),
+            subtitle: Text(
+              '$countryCount countries',
+              style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12),
             ),
-          ],
+            children: group.subregions.length == 1
+                ? _buildCountryTiles(group.subregions.first)
+                : [
+                    for (final subregion in group.subregions)
+                      if (_groupedByRegion.containsKey(subregion))
+                        _buildSubregionTile(subregion),
+                  ],
+          ),
         );
       },
+    );
+  }
+
+  Widget _buildSubregionTile(String subregion) {
+    final countries = _groupedByRegion[subregion]!;
+    final isExpanded = _expandedSubregions.contains(subregion);
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 12),
+      child: ExpansionTile(
+        key: PageStorageKey<String>('country-subregion-$subregion'),
+        initiallyExpanded: isExpanded,
+        onExpansionChanged: (expanded) {
+          setState(() {
+            if (expanded) {
+              _expandedSubregions.add(subregion);
+            } else {
+              _expandedSubregions.remove(subregion);
+            }
+          });
+        },
+        tilePadding: const EdgeInsets.only(left: 16, right: 16),
+        childrenPadding: const EdgeInsets.only(bottom: 6),
+        iconColor: theme.colorScheme.primary,
+        collapsedIconColor: theme.textTheme.bodyMedium?.color,
+        title: Text(
+          subregion,
+          style: theme.textTheme.titleMedium,
+        ),
+        subtitle: Text(
+          '${countries.length} countries',
+          style: theme.textTheme.bodyMedium?.copyWith(fontSize: 12),
+        ),
+        children: _buildCountryTiles(subregion),
+      ),
+    );
+  }
+
+  List<Widget> _buildCountryTiles(String region) {
+    final countries = _groupedByRegion[region] ?? const <Country>[];
+    return [
+      for (final country in countries)
+        CountryTile(
+          country: country,
+          onTap: () => widget.onCountrySelected(country),
+          onInfoTap: widget.onCountryInfoTap != null
+              ? () => widget.onCountryInfoTap!(country)
+              : null,
+        ),
+    ];
+  }
+}
+
+class _RegionGroup {
+  final String name;
+  final List<String> subregions;
+
+  const _RegionGroup({
+    required this.name,
+    required this.subregions,
+  });
+
+  int countryCount(Map<String, List<Country>> countriesByRegion) {
+    return subregions.fold<int>(
+      0,
+      (total, subregion) => total + (countriesByRegion[subregion]?.length ?? 0),
     );
   }
 }
